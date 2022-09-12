@@ -11,7 +11,7 @@ std::vector<double> x;
 
 int main() {
     //define num number of intervals
-    int num =1000s;
+    int num =1000;
     //define discretisized 1D spatial points
     for (int i = 0; i <= num; i++){
         double xi = double(i)/num;
