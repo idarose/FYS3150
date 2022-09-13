@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 #include<iostream>
 #include<vector>
 #include<cmath>
@@ -8,8 +7,6 @@
 #include <sstream>
 
 using namespace std;
-
-
 
 // Declare functions for f and u
 double abs_err(double u, double v);
@@ -22,7 +19,7 @@ double max_vec (std::vector<double> v);
 int main()
 {
     //Initialize parameters
-    double n = 10.0;
+    int n = 10;
     double h = (1./n);
     //Preset for printing 
     int width = 12;
@@ -95,14 +92,72 @@ int main()
         relerr[i] = rel_err(u[i],g[i]);
     }
 
-    //Finding maximum relative error
+    
+    //Convert n to a string for the data file
+    std::string k = std::to_string(n);
+    std::string nomen = "error_data";
+    std::string filename = nomen + '_' + k;
+    std::ofstream ofile;
+    ofile.open(filename);
+    
+    for(int i = 1; i <= n; i++)
+    {
+        ofile <<std::setw(width)<< std::setw(width) << std::setprecision(prec) << std::scientific << x[i]
+        << std::setw(width) << ',' <<std::setw(width)<<std::setprecision(prec) << std::scientific << relerr[i]
+        << std::endl;
+    }
+    ofile.close();    
+    //Initialize the three separate files
+    std::string fila = "absolute_error";
+    std::string filb = "relative_error";
+    std::string filc = "max_rel_err";
+    std::ofstream godfila;
+    godfila.open(fila);
+    std::ofstream godfilb;
+    godfilb.open(filb);
+    std::ofstream godfilc;
+    godfilc.open(filc);
 
-    double max = max_vec(relerr);
+    //Set maximum exponential
+    int max_exp = 5;
+    //Create a vector of values of n from 10, 100 ... 10^5
+    std::vector<double> m(max_exp);
+    for(int j= 1; j<max_exp; j++)
+    {
+        m[j] = std::pow(10, j);
+        std::vector<double> new_rel(m[j]);
+        std::vector<double> nu(m[j], 0);
+        std::vector<double> nx(m[j], 0);
+        double nh = 1./m[j];
+        for(int jj; jj<m[j]; jj++)
+        {
+            nx[jj] = nh * jj;
+            nu[jj] = func_u(nx[jj]);
+            new_rel[jj] = rel_err(nu[jj],g[jj]);
+            double new_abs = abs_err(nu[jj],g[jj]);
+            godfila <<std::setw(width)<< std::setw(width) << std::setprecision(prec) << std::scientific << nx[jj]
+            << std::setw(width) << ',' <<std::setw(width)<<std::setprecision(prec) << std::scientific << new_abs
+            << std::endl;
+            godfilb <<std::setw(width)<< std::setw(width) << std::setprecision(prec) << std::scientific << nx[jj]
+            << std::setw(width) << ',' <<std::setw(width)<<std::setprecision(prec) << std::scientific << new_rel[jj]
+            << std::endl;
+        }
+        godfila << std::endl << '|' << std::endl <<std::endl;
+        godfilb << std::endl << '|' << std::endl <<std::endl;
+        
+        double max_err = max_vec(new_rel);
+        
+        
+        
+        godfilc <<std::setw(width)<< std::setw(width) << std::setprecision(prec) << std::scientific << m[j]
+        << std::setw(width) << ',' <<std::setw(width)<<std::setprecision(prec) << std::scientific << max_err
+        << std::endl;
 
-    std::cout << relerr[10] << std::endl;
-
+    }
+    godfila.close();
+    godfilb.close();
+    godfilc.close();
     return 0;
-
 }
 
 double func_u(double x)
