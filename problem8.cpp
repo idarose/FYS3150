@@ -136,16 +136,3 @@ double max_vec (std::vector<double> v){
 
     return max_val;
 }
-=======
-#include<iostream>
-#include<vector>
-#include<cmath>
-#include<string>
-#include<fstream>
-#include<iomanip>
-
-// Declare functions for f and u
-double abs_err(double u, double v);
-double rel_err(double u, double v);
-double max_err(vector u, vector v);
-double func_v(double x);
