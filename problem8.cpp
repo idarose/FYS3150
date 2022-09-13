@@ -23,7 +23,7 @@ int main()
     double h = (1./n);
     //Preset for printing 
     int width = 12;
-    int prec = 4;
+    int prec = 8;
 
     //Make two vectors for u and x
     std::vector<double> u(n, 0);
@@ -142,12 +142,11 @@ int main()
             << std::setw(width) << ',' <<std::setw(width)<<std::setprecision(prec) << std::scientific << new_rel[jj]
             << std::endl;
         }
+        //Spacer ut forskjellige verdier for n med en "|"
         godfila << std::endl << '|' << std::endl <<std::endl;
         godfilb << std::endl << '|' << std::endl <<std::endl;
-        
+        new_rel[0] = 0;
         double max_err = max_vec(new_rel);
-        
-        
         
         godfilc <<std::setw(width)<< std::setw(width) << std::setprecision(prec) << std::scientific << m[j]
         << std::setw(width) << ',' <<std::setw(width)<<std::setprecision(prec) << std::scientific << max_err
@@ -183,11 +182,11 @@ double max_vec (std::vector<double> v){
 
     double max_val = 0;
     for (int i = 1; i < (m-1); i++){
-        if (v[i] > max_val)
+        if (abs(v[i]) > max_val)
         {
-            max_val = v[i];
+            max_val = abs(v[i]);
         }
     }
 
-    return max_val;
+    return abs(max_val);
 }
