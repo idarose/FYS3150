@@ -91,13 +91,8 @@ int main()
                         //approximated values on the interval [0,1].
         for(int jj=1; jj<m[j]; jj++)
         {
-            if (j==1)
-            {
-                std::cout << g[jj] << std::endl;
-            }
             new_rel[jj] = rel_err(nu[jj],g[jj]);
             double new_abs = abs_err(nu[jj],g[jj]);
-            //new_rel[0] = 0;
             godfila <<std::setw(width)<< std::setw(width) << std::setprecision(prec) << std::scientific << nx[jj]
             << std::setw(width) << ',' <<std::setw(width)<<std::setprecision(prec) << std::scientific << new_abs
             << std::endl;
@@ -150,3 +145,4 @@ double max_vec (std::vector<double> v){
 
     return abs(max_val);
 }
+
