@@ -15,14 +15,7 @@ plt.xlabel('x')
 plt.legend()
 plt.ylabel('log10(absolute error)')
 
-#plt.savefig
 plt.show()
 
-#ax[0].plot(data['x'].head(9), data['err'].head(9))
-#ax[1].plot(data['x'].iloc[13:107], data['err'].iloc[13:107])
-#ax[2].plot(data['x'].iloc[115:1106], data['err'].iloc[115:1106])
-#ax[3].plot(data['x'].iloc[1118:11108].astype(float), data['err'].iloc[1118:11108])
-#print(data['x'].iloc[1118:11108])
-#fig.savefig('problem8a.png')
 
 
