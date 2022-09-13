@@ -1,4 +1,3 @@
-from sre_parse import SPECIAL_CHARS
 import numpy as np
 
 #Loading time data
