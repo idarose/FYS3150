@@ -19,7 +19,12 @@ ax[0].set_ylabel('log10 of relative error')
 ax[1].set_ylabel('log10 of relative error')
 ax[2].set_ylabel('log10 of relative error')
 ax[3].set_ylabel('log10 of relative error')
+ax[0].set_title('n=10')
+ax[1].set_title('n=100')
+ax[2].set_title('n=1000')
+ax[3].set_title('n=10000')
 
 fig.savefig('problem8b.png')
+
 
 
