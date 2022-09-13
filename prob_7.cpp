@@ -74,6 +74,7 @@ int main() {
         //Write the x and g values to a csv file to be used later
         double xi = x.at(i);
         double gi = g.at(i);
+        //std::cout << gi<< std::endl;
         ofile << std::setprecision(4) << std::scientific << xi << ","
               << std::setprecision(4) << std::scientific << gi
               << std::endl; 
