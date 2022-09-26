@@ -71,4 +71,3 @@ arma::mat eigen_vectors (int N)
 
     return vec;
 }
-
