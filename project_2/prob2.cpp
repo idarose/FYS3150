@@ -1,11 +1,58 @@
 #include <iostream>
-#include <iomanip>
-#include <vector>
 #include <cmath>
-#include <string>
-#include <fstream>
-#include <algorithm>
 #include <armadillo>
+
+#define _USE_MATH_DEFINES
+
+arma::mat eigen_vectors (int n);
+arma::vec eigen_values (int n, double d, double a);
+
+int main (){
+    //Defining number of steps
+    int n = 7;
+
+    //Defining stepsize
+    double h = 1/(double)n;
+    int N = n-1;
+
+    //Defining main diagonal d
+    double d = 2/std::pow(h,2);
+    //Defining upper and lower diagonal a
+    double a = -1/std::pow(h,2);
+
+    //Making matrix A and filling it
+    arma::mat A(N, N);
+    A.eye();
+    A.diag(1).fill(a);
+    A.diag(0).fill(d);
+    A.diag(-1).fill(a);
+
+    //Finding eigenvalues and eigenvectors with arma::eig_sym
+    arma::mat v;
+    arma::vec lambda;
+
+    arma::eig_sym(lambda, v , A);
+    v = arma::normalise(v, 1, 0);
+    
+    //Finding analytical eigenvalues 
+    arma::vec ana_eigen_val = arma::vec(N);
+    ana_eigen_val = eigen_values(N,d,a);
+
+    //Finding analytical eigenvectors
+    arma::mat ana_eigen_vec = arma::mat(N,N);
+    ana_eigen_vec = eigen_vectors(N);
+
+    std::cout << "Analytical eigenvalues " << std::endl;
+    std::cout << ana_eigen_val << std::endl;
+    std::cout << "Armadillo eigenvales" << std::endl;
+    std::cout << lambda << std::endl;
+    std::cout << "Analytical eigenvectors " << std::endl;
+    std::cout << ana_eigen_vec << std::endl;
+    std::cout << "Armadillo eigenvectors " << std::endl; 
+    std::cout << v << std::endl;
+
+    return 0;
+}
 
 arma::vec eigen_values (int N, double d, double a)
 {
