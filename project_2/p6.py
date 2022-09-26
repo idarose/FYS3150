@@ -20,6 +20,8 @@ for i in range(len(vector[0].split())):
     y3[i] = float(vector[4].split()[i])
 
 x = np.linspace(0,1,len(vector[0].split()))
+y1[0] = 0; y2[0] = 0; y3[0]=0
+y1[-1] = 0; y2[-1] = 0; y3[-1] = 0
 
 plt.plot(x,y1, 'r-', label = 'Smallest eig')
 plt.plot(x,y2, 'b-', label = '2. smallest eig')
