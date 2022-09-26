@@ -12,9 +12,8 @@ double max_offdiag_symmetric(const arma::mat& A, int& k, int &l);
 int  write_to_file(int N, double eps);
 int dense_boii(int N, double eps);
 
-
 int main() {
-    int N = 6;
+    int N = 99;
     double h = 1/double(N);
     double eps = 1e-8;
     int width = 12;
@@ -30,7 +29,7 @@ int main() {
     
     double akl = 10;
     int iterations;
-    for (int ii = 0; ii< 1e9; ii++)
+    for (int ii = 0; ii< 1e8; ii++)
     {
         if (akl>eps)
         {
@@ -44,25 +43,18 @@ int main() {
     }
     std::cout<<iterations<<std::endl;
     std::cout<<A;
-    
 
-    arma::vec lambda = arma::vec (N);
-    arma::mat v = arma::mat (N,N);
-    //arma::eig_sym(lambda, v, A);
-    //lambda.print();
-    
-    /*
-
+    //Problem 5
     int iterations_DB;
-    std::string filename = "data_prob_5.csv";
-    std::string filenom = "dense_boii_data.csv";
+    std::string filename5a = "data_prob_5.csv";
+    std::string filename5b = "dense_boii_data.csv";
     //List of N's used for iterations
-    std::vector<int> N_list = {6,8,10,12,14};
+    std::vector<int> N_list = {6,10,20,30,40,50,60};
     //Open files for a tridiagonal and dense matrix, which will contain N and Iter
     std::ofstream ofile;
-    ofile.open(filename);
+    ofile.open(filename5a);
     std::ofstream bfile;
-    bfile.open(filenom);
+    bfile.open(filename5b);
     for (int k = 0; k<  N_list.size(); k++)
     {
         iterations = write_to_file(N_list[k], eps);
@@ -76,7 +68,34 @@ int main() {
     }
     ofile.close();
     bfile.close();
-    */
+    
+    //Problem 6
+    int min_val = 0;
+    std::string filename6a = "data_prob_6a.csv";
+    std::string filename6b = "data_prob_6b.csv";
+    std::ofstream mofile;
+    mofile.open(filename6a);
+    std::ofstream nofile;
+    nofile.open(filename6b);
+    for (int i = 0; i<3;i++)
+    {
+        min_val = A.diag(0).index_min();
+        A.row(min_val) = A.row(min_val)*100;
+        if(N <50)
+        {
+            mofile << std::setw(width)<< std::setw(width) << std::setprecision(prec) << std::scientific << R.row(min_val)
+                   << ',' << std::endl;
+        }
+        else
+        {
+            nofile << std::setw(width)<< std::setw(width) << std::setprecision(prec) << std::scientific << R.row(min_val)
+                   << ',' << std::endl;
+        }
+
+    }
+    
+    mofile.close();
+    nofile.close();
     return 0;
 }
 
@@ -127,10 +146,10 @@ double Jacobi_rotate(arma::mat& A, arma::mat& R, int& N){
 
 
     double Akk = S.at(k,k); double All = S.at(l,l); double AKL = S.at(k,l);
-
     //Update A-matrix
     for (int i = 0; i<N; i++)
     {
+        double Rik = R.at(i,k); double Ril = R.at(i,l); 
         if(i!=k and i!=l)
         {
             //A.at(i,i) = S.at(i,i); Unødvendig, er likt
@@ -139,12 +158,16 @@ double Jacobi_rotate(arma::mat& A, arma::mat& R, int& N){
             A.at(k,i) = A.at(i,k);              //  S.at(k,i)*c - S.at(l,i)*s;
             A.at(l,i) = A.at(i,l);              //  S.at(l,i)*c + S.at(k,i)*s;
         }
+        R.at(i,k) = Rik*c - Ril*s;
+        R.at(i,l) = Ril*c + Rik*s;
+        R.at(k,i) = R.at(i,k);
+        R.at(l,i) = R.at(i,l);
     }
     
     A.at(k,k) = Akk*std::pow(c,2) - 2*AKL*c*s + All*std::pow(s,2);
     A.at(l,l) = All*std::pow(c,2) + 2*AKL*c*s + Akk*std::pow(s,2);
-    A.at(k,l) = (Akk-All)*c*s + AKL*(std::pow(c,2)-std::pow(s,2));
-    A.at(l,k) = A.at(k,l);      
+    A.at(k,l) = 0;//(Akk-All)*c*s + AKL*(std::pow(c,2)-std::pow(s,2));
+    A.at(l,k) = 0;//A.at(k,l);      
     
     return akl;
 }
