@@ -11,15 +11,15 @@ data_b = pd.read_csv("C:/Users/Lenovo/Documents/Høst22/FYS4150/Prosjekt2/data_p
 #vector = data_a['v1'].values
 vector = data_b['v1'].values
 
-y1 = np.zeros(len(vector[0].split()))
-y2 = np.zeros(len(vector[2].split()))
-y3 = np.zeros(len(vector[4].split()))
+y1 = np.zeros(len(vector[0].split())+1)
+y2 = np.zeros(len(vector[2].split())+1)
+y3 = np.zeros(len(vector[4].split())+1)
 for i in range(len(vector[0].split())):
     y1[i] = float(vector[0].split()[i])
     y2[i] = float(vector[2].split()[i])
     y3[i] = float(vector[4].split()[i])
 
-x = np.linspace(0,1,len(vector[0].split()))
+x = np.linspace(0,1,len(vector[0].split())+1)
 y1[0] = 0; y2[0] = 0; y3[0]=0
 y1[-1] = 0; y2[-1] = 0; y3[-1] = 0
 
