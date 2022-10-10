@@ -10,6 +10,8 @@
 #include "Particle.hpp"
 #include "PenningTrap.hpp"
 
+//RUN: g++ project_3.cpp src/* -larmadillo -I include/ 
+
 int main(){
     //test-code
     arma::vec position = {0,0,1};

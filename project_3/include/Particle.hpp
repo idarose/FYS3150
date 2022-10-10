@@ -7,16 +7,16 @@
 
 class Particle{
 
-    private:
+    public:
         double charge_;
         double mass_;
 
-    public:
+    
         arma::vec position;
         arma::vec velocity;
 
         //constructor
-        Particle(double charge, double mass, arma::vec position_in, arma::vec velocity_in);
+        Particle(double charge_in, double mass_in, arma::vec position_in, arma::vec velocity_in);
 
         //method to update position:
         void new_position(arma::vec new_position);
@@ -26,5 +26,6 @@ class Particle{
         //info about position and velocity
         arma::vec position_info();
         arma::vec velocity_info();
+        double charge();
 };
 #endif

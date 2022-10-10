@@ -11,6 +11,7 @@ class PenningTrap{
         double B0;
         double V0;
         double d;
+        double ke;
         std::vector<Particle> particles;
 
   // Constructor

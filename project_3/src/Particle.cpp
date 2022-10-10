@@ -4,9 +4,9 @@
 
 
 
-Particle::Particle(double charge, double mass, arma::vec position_in, arma::vec velocity_in){
-    charge_ = charge;
-    mass_ = mass;
+Particle::Particle(double charge_in, double mass_in, arma::vec position_in, arma::vec velocity_in){
+    charge_ = charge_in;
+    mass_ = mass_in;
     position = position_in;
     velocity = velocity_in;
 }
@@ -26,4 +26,8 @@ arma::vec Particle::position_info(){
 }
 arma::vec Particle::velocity_info(){
     return velocity;
+}
+
+double Particle::charge(){
+    return charge_;
 }
