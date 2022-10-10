@@ -14,13 +14,28 @@
 
 int main(){
     //test-code
-    arma::vec position = {0,0,1};
-    arma::vec velocity = {1,0,0};
+    arma::vec position1 = {0,0,1};
+    arma::vec velocity1 = {1,0,0};
+    arma::vec position2 = {0,0,-1};
+    arma::vec velocity2 = {-1,0,0};
     //create Particle
-    Particle my_Particle = Particle(1, 1, position, velocity);
-    //find Particle position
-    arma::vec Particle_position = my_Particle.position_info();
+    Particle Particle1 = Particle(1, 1, position1, velocity1);
+    Particle Particle2 = Particle(-1,1,position2, velocity2);
 
-    std::cout<< Particle_position;
+    PenningTrap test1 = PenningTrap(9.65, 9.65e8, 10e4);
+    
+    test1.add_Particle(Particle1);
+    test1.add_Particle(Particle2);
+
+    arma::vec f_ext = test1.total_force_external(0);
+    std::cout << f_ext << std::endl;
+
+    arma::vec f_part = test1.total_force_Particles(0);
+
+    std::cout << f_part << std::endl;
+
+    arma::vec f_tot = test1.total_force(0);
+
+    std::cout << f_tot << std::endl;
     return 0;
 }
