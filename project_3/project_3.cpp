@@ -37,5 +37,9 @@ int main(){
     arma::vec f_tot = test1.total_force(0);
 
     std::cout << f_tot << std::endl;
+    std::cout << Particle1.position;
+    test1.evolve_RK4(0.001);
+
+    std::cout << Particle1.position;
     return 0;
 }

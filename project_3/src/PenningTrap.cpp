@@ -90,21 +90,66 @@ arma::vec PenningTrap::total_force(int i){
 void PenningTrap::evolve_RK4(double dt){
 
     int number_particles = particles.size();
+    arma::vec a(3);
+    arma::mat K(6,number_particles);
+    arma::vec f(6);
+    arma::vec v(3);
 
-    arma::vec a;
-    arma::vec f;
-    arma::vec p;
-
-    arma::mat init; 
-    init.col(0) = particle_j.position;
-    init.col(1) = particle_j.velocity;
-
-    f = {particle_j.position, particle_j.velocity};
     for (int j=0; j<number_particles; j++){
         Particle particle_j = particles[j];
+
         a = total_force(j)/particle_j.mass_;
+        v = particle_j.velocity;
+        f = {v(0), v(1), v(2), a(0), a(1), a(2)};
+        arma::vec k1 = dt * f;
+        arma::vec position = {k1(0), k1(1), k1(2)};
+        arma::vec velocity = {k1(3), k1(4), k1(5)};
+        particle_j.new_position(particle_j.position + 1/2*position);
+        particle_j.new_velocity(particle_j.velocity + 1/2*velocity);
+        a = total_force(j)/particle_j.mass_;
+        v = particle_j.velocity;
+        f = {v(0), v(1), v(2), a(0), a(1), a(2)};
+        arma::vec k2 = dt * f;
+
+        particle_j.new_position(particle_j.position - 1/2*position);
+        particle_j.new_velocity(particle_j.velocity - 1/2*position);
+        position = {k2(0), k2(1), k2(2)};
+        velocity = {k2(3), k2(4), k2(5)};
+
+        particle_j.new_position(particle_j.position + 1/2*position);
+        particle_j.new_velocity(particle_j.velocity + 1/2*velocity);
+
+        a = total_force(j)/particle_j.mass_;
+        v = particle_j.velocity;
+        f = {v(0), v(1), v(2), a(0), a(1), a(2)};
+        arma::vec k3 = dt*f;
+        particle_j.new_position(particle_j.position - 1/2*position);
+        particle_j.new_velocity(particle_j.velocity - 1/2*position);
+        position = {k3(0), k3(1), k3(2)};
+        velocity = {k3(3), k3(4), k3(5)};
+
+        particle_j.new_position(particle_j.position + position);
+        particle_j.new_velocity(particle_j.velocity + velocity);
+        a = total_force(j)/particle_j.mass_;
+        v = particle_j.velocity;
+        f = {v(0), v(1), v(2), a(0), a(1), a(2)};    
+        arma::vec k4 = dt*f;
+        arma::vec k_av = 1/6 * (k1 +2*k2 + 2*k3 + k4);
+        particle_j.new_position(particle_j.position - position);
+        particle_j.new_velocity(particle_j.velocity - velocity);
+        K.col(j) = k_av;          
         
     }
+    for(int i=0; i<number_particles; i++){
+        Particle particle_i = particles[i];
+        arma::vec position = {K(0,i), K(1,i), K(2,i)};
+        arma::vec velocity = {K(3,i), K(4,i), K(5,i)};
+        particle_i.new_position(particle_i.position + position);
+
+        particle_i.new_velocity(particle_i.velocity + velocity);
+
+    }
+
 };
 
 // Evolve the system one time step (dt) using Forward Euler
