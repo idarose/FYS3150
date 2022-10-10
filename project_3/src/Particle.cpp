@@ -19,15 +19,3 @@ void Particle::new_position(arma::vec new_position){
 void Particle::new_velocity(arma::vec new_velocity){
     velocity = new_velocity;
 }
-
-//info about position and velocity
-arma::vec Particle::position_info(){
-    return position;
-}
-arma::vec Particle::velocity_info(){
-    return velocity;
-}
-
-double Particle::charge(){
-    return charge_;
-}
