@@ -100,6 +100,7 @@ void PenningTrap::evolve_RK4(double dt){
 
         a = total_force(j)/particle_j.mass_;
         v = particle_j.velocity;
+        double 
         f = {v(0), v(1), v(2), a(0), a(1), a(2)};
         arma::vec k1 = dt * f;
         arma::vec position = {k1(0), k1(1), k1(2)};
