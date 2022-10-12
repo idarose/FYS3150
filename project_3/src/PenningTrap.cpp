@@ -143,21 +143,45 @@ void PenningTrap::evolve_RK4(double dt){
     for(int i=0; i<number_particles; i++){
         Particle &particle_i = particles[i];
         arma::vec position = {K(0,i), K(1,i), K(2,i)};
-        std::cout << position;
-
         arma::vec velocity = {K(3,i), K(4,i), K(5,i)};
 
-        if (i==0){std::cout << particle_i.position;}
         particle_i.position = particle_i.position + position;
-
         particle_i.velocity = particle_i.velocity + velocity;
-
-        if (i==0){std::cout << particle_i.position;}
-
     }
 
 };
-
+/*
 // Evolve the system one time step (dt) using Forward Euler
 void PenningTrap::evolve_forward_Euler(double dt){
-};
+    {
+    int number_particles = particles.size();
+    arma::vec a(3);
+    arma::mat K(6,number_particles);
+    arma::vec f(6);
+    arma::vec v(3);
+    for (int j=0; j<number_particles; j++){
+        Particle particle_j = particles[j];
+        a = total_force(j)/particle_j.mass_;
+        v = particle_j.velocity;
+        f = {v(0), v(1), v(2), a(0), a(1), a(2)};
+        arma::vec k1 = dt * f;
+        arma::vec pos = particle_j.get_positions();
+        arma::vec position = {k1(0), k1(1), k1(2)};
+        arma::vec velocity = {k1(3), k1(4), k1(5)};
+        particle_j.new_velocity(v + velocity);
+        particle_j.new_pos(pos + position);
+        for (int i=0; i<=6; i++)
+        {
+            if (i<3)
+            {
+                K(i,j) = pos + position;
+            }
+            else
+            {
+                K(i,j) = v + velocity;
+            }
+        }
+        //Tror ikke vi trenger mer enn dette!!
+    }
+
+};*/

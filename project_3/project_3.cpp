@@ -13,16 +13,20 @@
 //RUN: g++ project_3.cpp src/* -larmadillo -I include/ 
 
 int main(){
+    double V0 = 2.41e6;
+    double B0 = 9.65e1; 
+    double d = 500;
+
     //test-code
-    arma::vec position1 = {0,0,1};
-    arma::vec velocity1 = {1,0,0};
-    arma::vec position2 = {0,0,-1};
-    arma::vec velocity2 = {-1,0,0};
+    arma::vec position1 = {20,0,20};
+    arma::vec velocity1 = {0,25,0};
+    arma::vec position2 = {25,25,0};
+    arma::vec velocity2 = {0,40,5};
     //create Particle
     Particle Particle1 = Particle(1, 1, position1, velocity1);
     Particle Particle2 = Particle(-1,1,position2, velocity2);
 
-    PenningTrap test1 = PenningTrap(9.65, 9.65e8, 10e4);
+    PenningTrap test1 = PenningTrap(B0, V0, d);
     
     test1.add_Particle(Particle1);
     test1.add_Particle(Particle2);
@@ -35,7 +39,7 @@ int main(){
     arma::vec f_tot = test1.total_force(0);
 
     std::cout << test1.particles[0].position;
-    test1.evolve_RK4(100);
+    test1.evolve_RK4(0.01);
 
     std::cout<< test1.particles[0].position;
     return 0;
