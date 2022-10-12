@@ -27,19 +27,16 @@ int main(){
     test1.add_Particle(Particle1);
     test1.add_Particle(Particle2);
 
+
     arma::vec f_ext = test1.total_force_external(0);
-    std::cout << f_ext << std::endl;
 
     arma::vec f_part = test1.total_force_Particles(0);
 
-    std::cout << f_part << std::endl;
-
     arma::vec f_tot = test1.total_force(0);
 
-    std::cout << f_tot << std::endl;
-    std::cout << Particle1.position;
-    test1.evolve_RK4(0.001);
+    std::cout << test1.particles[0].position;
+    test1.evolve_RK4(100);
 
-    std::cout << Particle1.position;
+    std::cout<< test1.particles[0].position;
     return 0;
 }
