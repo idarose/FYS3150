@@ -38,7 +38,6 @@ arma::vec PenningTrap::external_B_field(arma::vec r){
 // Force on Particle_i from Particle_j
 arma::vec PenningTrap::force_Particle(int i, int j){
     arma::vec force;
-    //neste 2 er feil
     Particle particle_i = particles[i];
     Particle particle_j = particles[j];
     arma::vec position_i = particle_i.position;
@@ -100,9 +99,9 @@ void PenningTrap::evolve_RK4(double dt){
 
         a = total_force(j)/particle_j.mass_;
         v = particle_j.velocity;
-        double 
         f = {v(0), v(1), v(2), a(0), a(1), a(2)};
         arma::vec k1 = dt * f;
+
         arma::vec position = {k1(0), k1(1), k1(2)};
         arma::vec velocity = {k1(3), k1(4), k1(5)};
         particle_j.new_position(particle_j.position + 1./2*position);
@@ -148,6 +147,7 @@ void PenningTrap::evolve_RK4(double dt){
 
         particle_i.position = particle_i.position + position;
         particle_i.velocity = particle_i.velocity + velocity;
+        
     }
 
 };
