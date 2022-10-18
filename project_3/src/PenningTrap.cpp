@@ -1,5 +1,6 @@
 #include <armadillo>
 #include <iostream>
+#include <cmath>
 #include <vector>
 #include "PenningTrap.hpp"
 #include "Particle.hpp"
@@ -25,6 +26,7 @@ arma::vec PenningTrap::external_E_field(arma::vec r){
     grad_V(1) = -2*r(1);
     grad_V(2) = 4*r(2);
     grad_V = grad_V * (-V0/2/pow(d,2));
+    std::cout << grad_V;
     return grad_V;
 };  
 
@@ -43,9 +45,9 @@ arma::vec PenningTrap::force_Particle(int i, int j){
     arma::vec position_i = particle_i.position;
     arma::vec position_j = particle_j.position;
     arma::vec distance_vector = particle_i.position - particle_j.position;
+    //std::cout<< distance_vector;
     double mag_distance_vector = sqrt( pow(distance_vector(0),2) + pow(distance_vector(1),2) + pow(distance_vector(2),2));
     force = ke*particle_i.charge_ * particle_j.charge_ * pow(mag_distance_vector,-3)*distance_vector;
-
     return force;
 };
 
@@ -54,13 +56,12 @@ arma::vec PenningTrap::total_force_external(int i){
     Particle particle_i = particles[i];
     arma::vec E_field_force = particle_i.charge_*external_E_field(particle_i.position);
     arma::vec B_field_force = particle_i.charge_*arma::cross(particle_i.velocity, external_B_field(particle_i.position));
-
     arma::vec total_force = E_field_force + B_field_force;
 
     return total_force;
 };
 
-// The total force on Particle_i from the other ALL OTHER Particles
+// The total force on Particle_i from ALL OTHER Particles
 arma::vec PenningTrap::total_force_Particles(int i){
     Particle particle_i = particles[i];
 
@@ -75,7 +76,7 @@ arma::vec PenningTrap::total_force_Particles(int i){
             force_particles += force_j;
         }
     }
-
+    
     return force_particles;
 };
 
@@ -96,63 +97,71 @@ void PenningTrap::evolve_RK4(double dt){
 
     for (int j=0; j<number_particles; j++){
         Particle particle_j = particles[j];
+        
 
         a = total_force(j)/particle_j.mass_;
+
         v = particle_j.velocity;
-        f = {v(0), v(1), v(2), a(0), a(1), a(2)};
-        arma::vec k1 = dt * f;
+        arma::vec kp1 = dt * v;
+        arma::vec kv1 = dt * a;
 
-        arma::vec position = {k1(0), k1(1), k1(2)};
-        arma::vec velocity = {k1(3), k1(4), k1(5)};
-        particle_j.new_position(particle_j.position + 1./2*position);
-        particle_j.new_velocity(particle_j.velocity + 1./2*velocity);
-        a = total_force(j)/particle_j.mass_;
-        v = particle_j.velocity;
-        f = {v(0), v(1), v(2), a(0), a(1), a(2)};
-        arma::vec k2 = dt * f;
-
-        particle_j.new_position(particle_j.position - 1./2*position);
-        particle_j.new_velocity(particle_j.velocity - 1./2*position);
-        position = {k2(0), k2(1), k2(2)};
-        velocity = {k2(3), k2(4), k2(5)};
-
-        particle_j.new_position(particle_j.position + 1./2*position);
-        particle_j.new_velocity(particle_j.velocity + 1./2*velocity);
+        particle_j.new_position(particle_j.position + 1./2*kp1);
+        particle_j.new_velocity(particle_j.velocity + 1./2*kv1);
 
         a = total_force(j)/particle_j.mass_;
-        v = particle_j.velocity;
-        f = {v(0), v(1), v(2), a(0), a(1), a(2)};
-        arma::vec k3 = dt*f;
-        particle_j.new_position(particle_j.position - 1./2*position);
-        particle_j.new_velocity(particle_j.velocity - 1./2*position);
-        position = {k3(0), k3(1), k3(2)};
-        velocity = {k3(3), k3(4), k3(5)};
+        arma::vec kp2 = dt * particle_j.velocity;
+        arma::vec kv2 = dt * a;
 
-        particle_j.new_position(particle_j.position + position);
-        particle_j.new_velocity(particle_j.velocity + velocity);
+        particle_j.new_position(particle_j.position - 1./2*kp1 + 1./2*kp2);
+        particle_j.new_velocity(particle_j.velocity - 1./2*kv1 + 1./2*kv2);
+
         a = total_force(j)/particle_j.mass_;
-        v = particle_j.velocity;
-        f = {v(0), v(1), v(2), a(0), a(1), a(2)};    
-        arma::vec k4 = dt*f;
-        arma::vec k_av = 1./6 * (k1 +2*k2 + 2*k3 + k4);
-        particle_j.new_position(particle_j.position - position);
-        particle_j.new_velocity(particle_j.velocity - velocity);
-        K.col(j) = k_av;          
+
+        arma::vec kp3 = dt*particle_j.velocity;
+        arma::vec kv3 = dt*a;
+
+        particle_j.new_position(particle_j.position - 1./2*kp2 + kp3);
+        particle_j.new_velocity(particle_j.velocity - 1./2*kv2 + kv3);
+        a = total_force(j)/particle_j.mass_;
+
+        arma::vec kp4 = dt*particle_j.velocity;
+        arma::vec kv4 = dt*a;
+
+        arma::vec kp_av = 1./6 * (kp1 +2*kp2 + 2*kp3 + kp4);
+        arma::vec kv_av = 1./6 * (kv1 +2*kv2 + 2*kv3 + kv4);
+
+        particle_j.new_position(particle_j.position - kp3);
+        particle_j.new_velocity(particle_j.velocity - kv3);
+
+        K(0,j) = kp_av(0);
+        K(1,j) = kp_av(1); 
+        K(2,j) = kp_av(2); 
+        K(3,j) = kv_av(0); 
+        K(4,j) = kv_av(1); 
+        K(5,j) = kv_av(2);      
     }
     
     for(int i=0; i<number_particles; i++){
-        Particle &particle_i = particles[i];
+        Particle particle_i = particles[i];
         arma::vec position = {K(0,i), K(1,i), K(2,i)};
         arma::vec velocity = {K(3,i), K(4,i), K(5,i)};
 
         particle_i.position = particle_i.position + position;
         particle_i.velocity = particle_i.velocity + velocity;
-        
+        particles[i] = particle_i;
+        arma::vec x = particle_i.position;
+        double X = sqrt(pow(x(0),2) + pow(x(1),2) + pow(x(2),2));
+        if(X > d){
+            particles[i].charge_ = 0;
+            particles[i].position = {1000,1000,1000};
+            particles[i].velocity = {0,0,0};
+        }
     }
 
 };
 
 // Evolve the system one time step (dt) using Forward Euler
+/*
 void PenningTrap::evolve_forward_Euler(double dt){
     {
     int number_particles = particles.size();
@@ -185,4 +194,4 @@ void PenningTrap::evolve_forward_Euler(double dt){
         //Tror ikke vi trenger mer enn dette!!
     }
 
-};
+};*/
