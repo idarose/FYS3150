@@ -9,6 +9,9 @@ Particle::Particle(double charge_in, double mass_in, arma::vec position_in, arma
     mass_ = mass_in;
     position = position_in;
     velocity = velocity_in;
+    x0 = position_in(0);
+    v0 = velocity_in(1);
+    z0 = position_in(2);
 }
 
 //method to update position:

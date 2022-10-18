@@ -5,6 +5,7 @@
 #include "PenningTrap.hpp"
 #include "Particle.hpp"
 #include <cmath>
+#include <complex>
 
 // Constructor
 PenningTrap::PenningTrap(double B0_in, double V0_in, double d_in){
@@ -17,7 +18,7 @@ PenningTrap::PenningTrap(double B0_in, double V0_in, double d_in){
 // Add a Particle to the trap
 void PenningTrap::add_Particle(Particle &p_in){
     particles.push_back(p_in);
-}
+};
 
 // External electric field at point r=(x,y,z)
 arma::vec PenningTrap::external_E_field(arma::vec r){
@@ -26,7 +27,6 @@ arma::vec PenningTrap::external_E_field(arma::vec r){
     grad_V(1) = -2*r(1);
     grad_V(2) = 4*r(2);
     grad_V = grad_V * (-V0/2/pow(d,2));
-    std::cout << grad_V;
     return grad_V;
 };  
 
@@ -81,9 +81,43 @@ arma::vec PenningTrap::total_force_Particles(int i){
 };
 
 // The total force on Particle_i from both external fields and other Particles
-arma::vec PenningTrap::total_force(int i){
+arma::vec PenningTrap::total_force(int i)
+{
     arma::vec total_force = total_force_external(i) + total_force_Particles(i);
     return total_force;
+};
+
+//Find exact solution for particle i movement
+arma::mat PenningTrap::exact_solution(int i, int N)
+{  
+    std::complex<double> f;
+    arma::mat r_ex(3,N);
+    double q = particles[i].charge_;
+    double m = particles[i].mass_;
+    double x0 = particles[i].x0;
+    double z0 = particles[i].z0;
+    double v0 = particles[i].v0;
+    double w0 = q*B0/m;
+    double wz_sq = 2.*q*V0/m/pow(d,2);
+    double w_pluss = (w0 + sqrt( pow(w0,2) - 2*wz_sq ))/2;
+    double w_minus = (w0 - sqrt( pow(w0,2) - 2*wz_sq ))/2;
+
+    double A_pluss = (v0 + w_minus*x0)/(w_minus - w_pluss);
+    double A_minus = -(v0 + w_pluss*x0)/(w_minus - w_pluss);
+
+    for(int i=0; i<N; i++)
+    {
+        double t = double(i)/N;
+        f = A_pluss*exp(-sqrt(-1)*w_pluss*t) + A_minus*exp(-sqrt(-1)*w_minus*t);
+        r_ex(0,i) = std::real(f);
+        r_ex(1,i) = std::imag(f);
+        r_ex(2,i) = z0*cos(sqrt(wz_sq)*t);
+        std::cout << f;
+    }
+    
+
+
+    return r_ex;
 };
 
 // Evolve the system one time step (dt) using Runge-Kutta 4th order
@@ -162,7 +196,7 @@ void PenningTrap::evolve_RK4(double dt){
 
 // Evolve the system one time step (dt) using Forward Euler
 /*
-void PenningTrap::evolve_forward_Euler(double dt){
+void PenningTrap::evolve_forward_Euler(double dt)
     {
     int number_particles = particles.size();
     arma::vec a(3);
