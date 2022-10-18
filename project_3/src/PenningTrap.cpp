@@ -1,5 +1,6 @@
 #include <armadillo>
 #include <iostream>
+#include <cmath>
 #include <vector>
 #include "PenningTrap.hpp"
 #include "Particle.hpp"
@@ -25,6 +26,7 @@ arma::vec PenningTrap::external_E_field(arma::vec r){
     grad_V(1) = -2*r(1);
     grad_V(2) = 4*r(2);
     grad_V = grad_V * (-V0/2/pow(d,2));
+    std::cout << grad_V;
     return grad_V;
 };  
 
@@ -43,14 +45,9 @@ arma::vec PenningTrap::force_Particle(int i, int j){
     arma::vec position_i = particle_i.position;
     arma::vec position_j = particle_j.position;
     arma::vec distance_vector = particle_i.position - particle_j.position;
+    //std::cout<< distance_vector;
     double mag_distance_vector = sqrt( pow(distance_vector(0),2) + pow(distance_vector(1),2) + pow(distance_vector(2),2));
-    if(mag_distance_vector > 0.001){
     force = ke*particle_i.charge_ * particle_j.charge_ * pow(mag_distance_vector,-3)*distance_vector;
-    }
-    else{
-        force = ke*particle_i.charge_ * particle_j.charge_ * 0.001*distance_vector;
-    }
-
     return force;
 };
 
@@ -59,7 +56,6 @@ arma::vec PenningTrap::total_force_external(int i){
     Particle particle_i = particles[i];
     arma::vec E_field_force = particle_i.charge_*external_E_field(particle_i.position);
     arma::vec B_field_force = particle_i.charge_*arma::cross(particle_i.velocity, external_B_field(particle_i.position));
-
     arma::vec total_force = E_field_force + B_field_force;
 
     return total_force;
@@ -80,7 +76,7 @@ arma::vec PenningTrap::total_force_Particles(int i){
             force_particles += force_j;
         }
     }
-
+    
     return force_particles;
 };
 
@@ -101,8 +97,10 @@ void PenningTrap::evolve_RK4(double dt){
 
     for (int j=0; j<number_particles; j++){
         Particle particle_j = particles[j];
+        
 
         a = total_force(j)/particle_j.mass_;
+
         v = particle_j.velocity;
         arma::vec kp1 = dt * v;
         arma::vec kv1 = dt * a;
@@ -151,6 +149,13 @@ void PenningTrap::evolve_RK4(double dt){
         particle_i.position = particle_i.position + position;
         particle_i.velocity = particle_i.velocity + velocity;
         particles[i] = particle_i;
+        arma::vec x = particle_i.position;
+        double X = sqrt(pow(x(0),2) + pow(x(1),2) + pow(x(2),2));
+        if(X > d){
+            particles[i].charge_ = 0;
+            particles[i].position = {1000,1000,1000};
+            particles[i].velocity = {0,0,0};
+        }
     }
 
 };

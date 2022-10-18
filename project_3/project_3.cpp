@@ -39,42 +39,37 @@ int main(){
     test1.add_Particle(Particle1);
     test1.add_Particle(Particle2);
 
-
-    //arma::vec f_ext = test1.total_force_external(0);
-
-    //arma::vec f_part = test1.total_force_Particles(0);
-
-    //arma::vec f_tot = test1.total_force(0);
-
-    //std::cout << test1.particles[0].position;
     double dt = T/N;
     std::string var1 = "data1.csv";
     std::ofstream ofile;
     ofile.open(var1);
-    /*std::string var2 = "data2.csv";
+    std::string var2 = "data2.csv";
     std::ofstream bfile;
-    bfile.open(var2);*/
+    bfile.open(var2);
+    
     ofile <<std::setw(width)<< std::setw(width) << std::setprecision(prec) 
             << std::scientific << test1.particles[0].position[0]
             << std::setw(width) << ',' <<std::setprecision(prec) << std::scientific << 0
             << std::endl;
-    /*bfile <<std::setw(width)<< std::setw(width) << std::setprecision(prec) 
+
+    bfile <<std::setw(width)<< std::setw(width) << std::setprecision(prec) 
             << std::scientific << test1.particles[1].position[0]
-            << std::setw(width) << ',' <<std::setprecision(prec) << std::scientific << test1.particles[1].position[1]
-            << std::endl;*/
-    for(int n=1; n<N; n++){
+            << std::setw(width) << ',' <<std::setprecision(prec) << std::scientific << 0
+            << std::endl;
+
+    for(int n=1; n<int(N); n++){
         test1.evolve_RK4(dt);
         ofile <<std::setw(width)<< std::setw(width) << std::setprecision(prec) 
             << std::scientific << test1.particles[0].position[0]
             << std::setw(width) << ',' <<std::setprecision(prec) << std::scientific << n*dt
             << std::endl;
-       /* bfile <<std::setw(width)<< std::setw(width) << std::setprecision(prec) 
+        bfile <<std::setw(width)<< std::setw(width) << std::setprecision(prec) 
             << std::scientific << test1.particles[1].position[0]
-            << std::setw(width) << ',' <<std::setprecision(prec) << std::scientific << test1.particles[1].position[1]
-            << std::endl;*/
+            << std::setw(width) << ',' <<std::setprecision(prec) << std::scientific << n*dt
+            << std::endl;
     }
     ofile.close();
-    //bfile.close();
+    bfile.close();
     std::cout<< test1.particles[0].position;
     return 0;
 }
