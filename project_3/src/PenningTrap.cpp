@@ -33,6 +33,8 @@ arma::vec PenningTrap::external_E_field(arma::vec r){
 // External magnetic field at point r=(x,y,z)
 arma::vec PenningTrap::external_B_field(arma::vec r){
     arma::vec B(3);
+    B(0) = 0;
+    B(1) = 0;
     B(2) = B0;
     return B;
 }; 
@@ -55,7 +57,7 @@ arma::vec PenningTrap::force_Particle(int i, int j){
 arma::vec PenningTrap::total_force_external(int i){
     Particle particle_i = particles[i];
     arma::vec E_field_force = particle_i.charge_*external_E_field(particle_i.position);
-    arma::vec B_field_force = particle_i.charge_*arma::cross(particle_i.velocity, external_B_field(particle_i.position));
+    arma::vec B_field_force = particle_i.charge_* cross(particle_i.velocity, external_B_field(particle_i.position));
     arma::vec total_force = E_field_force + B_field_force;
 
     return total_force;
@@ -76,8 +78,8 @@ arma::vec PenningTrap::total_force_Particles(int i){
             force_particles += force_j;
         }
     }
-    
     return force_particles;
+
 };
 
 // The total force on Particle_i from both external fields and other Particles
@@ -90,7 +92,6 @@ arma::vec PenningTrap::total_force(int i)
 //Find exact solution for particle i movement
 arma::mat PenningTrap::exact_solution(int i, int N)
 {  
-    std::complex<double> f;
     arma::mat r_ex(3,N);
     double q = particles[i].charge_;
     double m = particles[i].mass_;
@@ -108,11 +109,9 @@ arma::mat PenningTrap::exact_solution(int i, int N)
     for(int i=0; i<N; i++)
     {
         double t = double(i)/N;
-        f = A_pluss*exp(-sqrt(-1)*w_pluss*t) + A_minus*exp(-sqrt(-1)*w_minus*t);
-        r_ex(0,i) = std::real(f);
-        r_ex(1,i) = std::imag(f);
+        r_ex(0,i) = A_pluss*cos(w_pluss*t) + A_minus*cos(w_minus*t);
+        r_ex(1,i) = -A_pluss*sin(w_pluss*t) - A_minus*sin(w_minus*t);
         r_ex(2,i) = z0*cos(sqrt(wz_sq)*t);
-        std::cout << f;
     }
     
 
@@ -131,9 +130,9 @@ void PenningTrap::evolve_RK4(double dt){
 
     for (int j=0; j<number_particles; j++){
         Particle particle_j = particles[j];
-        
+        double m = particle_j.mass_;
 
-        a = total_force(j)/particle_j.mass_;
+        a = total_force(j)/m;
 
         v = particle_j.velocity;
         arma::vec kp1 = dt * v;
@@ -142,21 +141,21 @@ void PenningTrap::evolve_RK4(double dt){
         particle_j.new_position(particle_j.position + 1./2*kp1);
         particle_j.new_velocity(particle_j.velocity + 1./2*kv1);
 
-        a = total_force(j)/particle_j.mass_;
+        a = total_force(j)/m;
         arma::vec kp2 = dt * particle_j.velocity;
         arma::vec kv2 = dt * a;
 
         particle_j.new_position(particle_j.position - 1./2*kp1 + 1./2*kp2);
         particle_j.new_velocity(particle_j.velocity - 1./2*kv1 + 1./2*kv2);
 
-        a = total_force(j)/particle_j.mass_;
+        a = total_force(j)/m;
 
         arma::vec kp3 = dt*particle_j.velocity;
         arma::vec kv3 = dt*a;
 
         particle_j.new_position(particle_j.position - 1./2*kp2 + kp3);
         particle_j.new_velocity(particle_j.velocity - 1./2*kv2 + kv3);
-        a = total_force(j)/particle_j.mass_;
+        a = total_force(j)/m;
 
         arma::vec kp4 = dt*particle_j.velocity;
         arma::vec kv4 = dt*a;
@@ -197,19 +196,20 @@ void PenningTrap::evolve_RK4(double dt){
 // Evolve the system one time step (dt) using Forward Euler
 /*
 void PenningTrap::evolve_forward_Euler(double dt)
-    {
     int number_particles = particles.size();
     arma::vec a(3);
     arma::mat K(6,number_particles);
     arma::vec f(6);
     arma::vec v(3);
+    arma::vec p(3);
     for (int j=0; j<number_particles; j++){
         Particle particle_j = particles[j];
         a = total_force(j)/particle_j.mass_;
         v = particle_j.velocity;
+        p = particle_j.position;
         f = {v(0), v(1), v(2), a(0), a(1), a(2)};
         arma::vec k1 = dt * f;
-        arma::vec pos = particle_j.get_positions();
+        //arma::vec pos = particle_j.new_positions();
         arma::vec position = {k1(0), k1(1), k1(2)};
         arma::vec velocity = {k1(3), k1(4), k1(5)};
         particle_j.new_velocity(v + velocity);
@@ -227,5 +227,4 @@ void PenningTrap::evolve_forward_Euler(double dt)
         }
         //Tror ikke vi trenger mer enn dette!!
     }
-
 };*/

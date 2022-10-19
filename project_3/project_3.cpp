@@ -22,7 +22,7 @@ int main(){
     double B0 = 9.65e1; 
     double d = 500;
     double T = 50;
-    //double N = 8000;
+    double N = 8000;
 
     int width = 12;
     int prec = 4;
@@ -40,17 +40,17 @@ int main(){
     PenningTrap test1 = PenningTrap(B0, V0, d);
     
     test1.add_Particle(Particle1);
-    //test1.add_Particle(Particle2);
+    test1.add_Particle(Particle2);
 
-    //double dt = T/N;
-    /*
+    double dt = T/N;
+    
     std::string var1 = "data1.csv";
     std::ofstream ofile;
     ofile.open(var1);
     std::string var2 = "data2.csv";
     std::ofstream bfile;
     bfile.open(var2);
-    
+
     ofile <<std::setw(width)<< std::setw(width) << std::setprecision(prec) 
             << std::scientific << test1.particles[0].position[0]
             << std::setw(width) << ',' <<std::setprecision(prec) << std::scientific << 0
@@ -60,8 +60,8 @@ int main(){
             << std::scientific << test1.particles[1].position[0]
             << std::setw(width) << ',' <<std::setprecision(prec) << std::scientific << 0
             << std::endl;
-
-    for(int n=1; n<int(N); n++){
+    
+    for(int n=1; n<N; n++){
         test1.evolve_RK4(dt);
         ofile <<std::setw(width)<< std::setw(width) << std::setprecision(prec) 
             << std::scientific << test1.particles[0].position[0]
@@ -74,19 +74,19 @@ int main(){
     }
     ofile.close();
     bfile.close();
-    std::cout<< test1.particles[0].position;*/
+    std::cout<< test1.particles[0].position;
 
     //Calculate rel_error
-    arma::vec N = {int(4000), int(8000), int(16000), int(32000)};
+    arma::vec NI = {int(4000), int(8000), int(16000), int(32000)};
     double r_err;
     double delta_maks2;
     double delta_maks1;
 
     for(int i=1; i<4; i++)
     {
-        int N2 = N(i);
+        int N2 = NI(i);
         double dt_i = T/N2;
-        int N1 = N(i-1);
+        int N1 = NI(i-1);
         double dt_0 = T/N1;
         arma::mat r_ex2(3,N2);
         arma::mat r_calc2(3, N2);
@@ -112,8 +112,7 @@ int main(){
         delta_maks2 = delta_maks(r_ex2, r_calc2, N2);
         delta_maks1 = delta_maks(r_ex1, r_calc1, N1);
 
-        r_err += 1./3* log10(delta_maks2/delta_maks1)/log10(dt_i/dt_0); 
-        //MAKE dt an aram::vec in main()
+        r_err += 1./3* log10(delta_maks2/delta_maks1)/log10(dt_i/dt_0);
         std::cout << r_err;
     }
 
