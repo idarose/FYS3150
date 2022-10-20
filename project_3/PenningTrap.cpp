@@ -309,12 +309,12 @@ void PenningTrap::evolve_forward_Euler(double dt)
         arma::vec position = {k1(0), k1(1), k1(2)};
         arma::vec velocity = {k1(3), k1(4), k1(5)};
         particle_j.new_velocity(v + velocity);
-        particle_j.new_pos(pos + position);
+        particle_j.new_position(p + position);
         for (int i=0; i<=6; i++)
         {
             if (i<3)
             {
-                K(i,j) = pos(0) + position(0);
+                K(i,j) = p(0) + position(0);
             }
             else
             {
