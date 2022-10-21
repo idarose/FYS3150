@@ -8,90 +8,52 @@
 #include <complex>
 
 // Constructor
-PenningTrap::PenningTrap(double B0_in, double V0_in, double d_in){
+PenningTrap::PenningTrap(double B0_in, double V0_in, double d_in, bool interaction, double f, double wf){
     B0 = B0_in;
+    freq = f;
+    wf = wf;
     V0 = V0_in;
-
-    //V0 = V0*(1+f*cos(wf*t));
-
+    interaction = interaction;
     d = d_in;
     ke = 1.38935333e5;
+    particles_in_trap = 0;
+     
 };
 
 // Add a Particle to the trap
 void PenningTrap::add_Particle(Particle &p_in){
     particles.push_back(p_in);
+    particles_in_trap += 1; 
 };
 
-//Bendik sitt forslag::
-//
-//Vi kan ha en external_E_fiel(arma::vec, bool out)
-//bool out er en true eller false, vi initialiserer med false men dersom |r| > d så setter vi out. 
-//Det samme kan vi gjøre for external_B
-/*
 // External electric field at point r=(x,y,z)
-arma::vec PenningTrap::external_E_field(arma::vec r, bool out){
-    if (out==True)
-    {
-        return 0;
-    }
+//Tror du må ha partikkel.out = true?
+arma::vec PenningTrap::external_E_field(arma::vec r, double time, int i ){
+    Particle particle_i = particles[i];
+    double V_t = V0*(1+ freq*cos(wf*time));    
     arma::vec grad_V(3);
     grad_V(0) = -2*r(0);
     grad_V(1) = -2*r(1);
     grad_V(2) = 4*r(2);
-    grad_V = grad_V * (-V0/2/pow(d,2));
+    grad_V = grad_V * (-V_t/2./pow(d,2));
+    if (particle_i.out==true)
+    {
+        return grad_V = grad_V*0;
+    }
     return grad_V;
 };  
 
 // External magnetic field at point r=(x,y,z)
-arma::vec PenningTrap::external_B_field(arma::vec r, bool out){
-    if (out==True)
+arma::vec PenningTrap::external_B_field(arma::vec r, int i){
+    Particle particle_i = particles[i];
+    arma::vec B(3);
+    B(0) = 0;
+    B(1) = 0;
+    B(2) = B0;
+    if (particle_i.out==true)
     {
-        return 0;
+        B(2)=B0*0;
     }
-    arma::vec B(3);
-    B(0) = 0;
-    B(1) = 0;
-    B(2) = B0;
-    return B;
-}; 
-*/
-
-// External electric field at point r=(x,y,z)
-arma::vec PenningTrap::external_E_field(arma::vec r){
-    //V er nå avhengig av tid --> Antakelig gi den en egen funksjoN?
-    /*V_t = V_T(t,wf,f);
-    arma::vec grad_V(3);
-    grad_V(0) = -2*r(0);
-    grad_V(1) = -2*r(1);
-    grad_V(2) = 4*r(2);
-    grad_V = grad_V * (-V_T/2./pow(d,2));
-    return grad_V;
-    
-    */
-    arma::vec grad_V(3);
-    grad_V(0) = -2*r(0);
-    grad_V(1) = -2*r(1);
-    grad_V(2) = 4*r(2);
-    grad_V = grad_V * (-V0/2./pow(d,2));
-    return grad_V;
-};  
-
-/*
------>
-arma::vec PenningTrap::V_T(t, wf, f)
-{
-    V_t = V0*(1+f*cos(wf*t));
-    return V_t
-}
-*/
-
-// External magnetic field at point r=(x,y,z)
-arma::vec PenningTrap::external_B_field(arma::vec r){
-    arma::vec B(3);
-    B(0) = 0;
-    B(1) = 0;
-    B(2) = B0;
     return B;
 }; 
 
@@ -109,57 +71,14 @@ arma::vec PenningTrap::force_Particle(int i, int j){
 };
 
 // The total force on Particle_i from the external fields
-arma::vec PenningTrap::total_force_external(int i){
+arma::vec PenningTrap::total_force_external(int i, double time){
     Particle particle_i = particles[i];
     //Trenger tidsavhengighet i external_E_Field
-    arma::vec E_field_force = particle_i.charge_*external_E_field(particle_i.position);
-    arma::vec B_field_force = particle_i.charge_* cross(particle_i.velocity, external_B_field(particle_i.position));
+    arma::vec E_field_force = particle_i.charge_*external_E_field(particle_i.position, time, i);
+    arma::vec B_field_force = particle_i.charge_* cross(particle_i.velocity, external_B_field(particle_i.position, i));
     arma::vec total_force = E_field_force + B_field_force;
     return total_force;
 };
-
-//Forslag fra Bendik
-/*
-// The total force on Particle_i from ALL OTHER Particles
-arma::vec PenningTrap::total_force_Particles(int i, bool interaction){
-    if (interaction = False)
-    {
-        return 0;
-    }
-    
-    Particle particle_i = particles[i];
-
-    arma::vec force_particles(3); 
-    int number_particles = particles.size();
-
-    for (int j=0; j<number_particles; j++)
-    {
-        if (i != j)
-        {
-            arma::vec force_j = force_Particle(i,j);
-            force_particles += force_j;
-        }
-    }
-    return force_particles;
-};
-
-
-ALTERNATIVT (Da slipper vi å ha så mange funksjoner som tar "bool interaction" som argument)
-
-
-// The total force on Particle_i from both external fields and other Particles
-arma::vec PenningTrap::total_force(int i, bool interaction)
-}
-    if (interaction = False)
-    {
-        return total_force_external(i);
-    }
-    arma::vec total_force = total_force_external(i) + total_force_Particles(i);
-    return total_force;
-};
-
-*/
-
 
 // The total force on Particle_i from ALL OTHER Particles
 arma::vec PenningTrap::total_force_Particles(int i){
@@ -180,10 +99,9 @@ arma::vec PenningTrap::total_force_Particles(int i){
 };
 
 // The total force on Particle_i from both external fields and other Particles
-arma::vec PenningTrap::total_force(int i)
+arma::vec PenningTrap::total_force(int i, double time)
 {
-    //Kun total force external er tidsavhengig
-    arma::vec total_force = total_force_external(i) + total_force_Particles(i);
+    arma::vec total_force = total_force_external(i, time) + total_force_Particles(i);
     return total_force;
 };
 
@@ -215,20 +133,18 @@ arma::mat PenningTrap::exact_solution(int i, int N)
 };
 
 // Evolve the system one time step (dt) using Runge-Kutta 4th order
-void PenningTrap::evolve_RK4(double dt){
+void PenningTrap::evolve_RK4(double dt, double time){
 
     int number_particles = particles.size();
     arma::vec a(3);
     arma::mat K(6,number_particles);
     arma::vec f(6);
     arma::vec v(3);
-    int particles_in_trap = number_particles;
     for (int j=0; j<number_particles; j++){
         Particle particle_j = particles[j];
         double m = particle_j.mass_;
-        //Om vi har tidsavhengighet må total_force ha t som argument
-        a = total_force(j)/m;
-
+        a = total_force(j, time)/m;
+        
         v = particle_j.velocity;
         arma::vec kp1 = dt * v;
         arma::vec kv1 = dt * a;
@@ -236,21 +152,21 @@ void PenningTrap::evolve_RK4(double dt){
         particle_j.new_position(particle_j.position + 1./2*kp1);
         particle_j.new_velocity(particle_j.velocity + 1./2*kv1);
 
-        a = total_force(j)/m;
+        a = total_force(j, time)/m;
         arma::vec kp2 = dt * particle_j.velocity;
         arma::vec kv2 = dt * a;
 
         particle_j.new_position(particle_j.position - 1./2*kp1 + 1./2*kp2);
         particle_j.new_velocity(particle_j.velocity - 1./2*kv1 + 1./2*kv2);
 
-        a = total_force(j)/m;
+        a = total_force(j, time)/m;
 
         arma::vec kp3 = dt*particle_j.velocity;
         arma::vec kv3 = dt*a;
 
         particle_j.new_position(particle_j.position - 1./2*kp2 + kp3);
         particle_j.new_velocity(particle_j.velocity - 1./2*kv2 + kv3);
-        a = total_force(j)/m;
+        a = total_force(j, time)/m;
 
         arma::vec kp4 = dt*particle_j.velocity;
         arma::vec kv4 = dt*a;
@@ -283,7 +199,9 @@ void PenningTrap::evolve_RK4(double dt){
             particles[i].charge_ = 0;
             particles[i].position = {1000,1000,1000};
             particles[i].velocity = {0,0,0};
-            particles_in_trap -= particles_in_trap;
+            //std::cout << 'N' << 'e' << 'e' << 'i';
+            particles_in_trap -= 1;
+            particles[i].out_of_trap(true);
         }
     }
 
