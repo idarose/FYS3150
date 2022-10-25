@@ -74,6 +74,9 @@ arma::vec PenningTrap::external_B_field(arma::vec r, int i){
 
 // Force on Particle_i from Particle_j
 arma::vec PenningTrap::force_Particle(int i, int j){
+    arma::vec force = {0,0,0};
+    if(interaction)
+    {
     arma::vec force;
     Particle particle_i = particles[i];
     Particle particle_j = particles[j];
@@ -85,7 +88,9 @@ arma::vec PenningTrap::force_Particle(int i, int j){
     double mag_distance_vector = sqrt( pow(distance_vector(0),2) + pow(distance_vector(1),2) + pow(distance_vector(2),2));
     //Coulomb force from particle j
     force = ke*particle_i.charge_ * particle_j.charge_ * pow(mag_distance_vector,-3)*distance_vector;
+    }
     return force;
+
 };
 
 // The total force on Particle_i from the external fields
@@ -264,14 +269,16 @@ void PenningTrap::evolve_forward_Euler(double dt, double time)
         a = total_force(j,time)/particle_j.mass_;
         v = particle_j.velocity;
         //Forward Euler
+        //store dx
         K1.col(j) = dt * v;
+        //store dv
         K2.col(j) = dt * a;
     }
 
     //Update position and velocity
     for(int j =0; j<number_particles; j++)
     {
-        particles[j].new_velocity(particles[j].velocity + K2.col(j));
         particles[j].new_position(particles[j].position + K1.col(j));
+        particles[j].new_velocity(particles[j].velocity + K2.col(j));
     }
 };
