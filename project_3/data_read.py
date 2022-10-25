@@ -3,14 +3,21 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
 
+#
+#Check the directory of your files. 
+#
+
+#Read data from z-t 
 data = pd.read_csv("C:/Users/Lenovo/Documents/Høst22/FYS4150/Prosjekt3/data1_zt.csv", sep=',', names = ['z', 't'], dtype=np.float64)
 data.replace(',','')
+#Plot zt
 plt.plot(data['t'],data['z'], 'xkcd:pumpkin')
 plt.xlabel('t[$\mu$s]', fontsize= 20)
 plt.ylabel('z[$\mu$m]', fontsize = 20)
 plt.title('Oscillations of a particle in z-direction', fontsize = 20)
 plt.savefig('C:/Users/Lenovo/Documents/Høst22/FYS4150/Prosjekt3/z_t_plot.pdf')
 
+#Read data from files
 data1_w_int = pd.read_csv("C:/Users/Lenovo/Documents/Høst22/FYS4150/Prosjekt3/data_xy_wint.csv", sep=',', names = ['x1', 'y1', 'x2', 'y2'], dtype=np.float64)
 data1_w_int.replace(',','')
 data1_wo_int = pd.read_csv("C:/Users/Lenovo/Documents/Høst22/FYS4150/Prosjekt3/data_xy_woint.csv", sep=',', names = ['x1', 'y1', 'x2', 'y2'], dtype=np.float64)
@@ -41,7 +48,7 @@ data_trap_wint.replace(',','')
 data_trap_woint = pd.read_csv("C:/Users/Lenovo/Documents/Høst22/FYS4150/Prosjekt3/data_trap_fine_wo_int.csv", sep=',', names = ['num', 'wv'], dtype=np.float64)
 data_trap_woint.replace(',','')
 
-
+#Plot and save phaseplots in figure
 fig = plt.figure(figsize = (10,20), tight_layout = True)
 ax1 = fig.add_subplot(4, 1, 1)
 ax2 = fig.add_subplot(4, 1, 2,sharex = ax1, sharey = ax1)
@@ -73,7 +80,7 @@ ax4.set_ylabel('z [$\mu$m]', fontsize = 20)
 
 fig.savefig("C:/Users/Lenovo/Documents/Høst22/FYS4150/Prosjekt3/Phaseplot.pdf")
 
-
+#Plot and save trajectories
 fig, axs = plt.subplots(2,1,figsize = (10,15), tight_layout=True)
 axs[0].plot(data1_w_int['x1'], data1_w_int['y1'], 'xkcd:minty green',label='P1 w/ int')
 axs[0].plot(data1_wo_int['x1'], data1_wo_int['y1'], 'xkcd:barbie pink',label='P1 w/o int')
@@ -89,6 +96,7 @@ axs[1].axis('equal')
 axs[1].set_ylabel('y [$\mu$m]', fontsize = 20)
 fig.savefig("C:/Users/Lenovo/Documents/Høst22/FYS4150/Prosjekt3/Posplot.pdf")
 
+#Plot and save 3D figures for particles 1 and 2
 fig = plt.figure(figsize = (10,10))
 ax = plt.axes(projection = '3d')
 ax.plot3D(data1_3d['x'], data1_3d['y'], data1_3d['z'], 'xkcd:minty green', label='W/ Interaction')
@@ -99,7 +107,6 @@ ax.set_zlabel('z[$\mu$m]', fontsize = 20)
 ax.legend(fontsize = 20)
 ax.set_title('Particle 1 in Penning Trap', fontsize = 20)
 fig.savefig("C:/Users/Lenovo/Documents/Høst22/FYS4150/Prosjekt3/3d_1.pdf")
-
 fig = plt.figure(figsize = (10,10))
 ax = plt.axes(projection = '3d')
 ax.plot3D(data2_3d['x'], data2_3d['y'], data2_3d['z'])
@@ -113,22 +120,19 @@ ax.legend(fontsize = 20)
 ax.set_title('Particle 2 in Penning Trap', fontsize = 20)
 fig.savefig("C:/Users/Lenovo/Documents/Høst22/FYS4150/Prosjekt3/3d_2.pdf")
 
-#plt.rcParams['text.usetex'] = True
+#Plot and save frequency plots 
 fig, axs = plt.subplots(3,1, figsize=(10,10), sharey=True, sharex = True)
 axs[0].plot(data_trap0['wv'], data_trap0['num0'],'xkcd:pumpkin', label='f0 = 0.1')
-#axs[0].set_xlabel('omega_v', fontsize = 15)
 axs[0].set_ylabel('%particles in trap',fontsize = 20)
 axs[1].plot(data_trap0['wv'], data_trap0['num1'],'xkcd:pumpkin', label='f1 = 0.4')
-#axs[1].set_xlabel('omega_v')
 axs[1].set_ylabel('%particles in trap', fontsize = 20)
 axs[2].plot(data_trap0['wv'], data_trap0['num2'],'xkcd:pumpkin', label='f0 = 0.7')
 axs[2].set_xlabel(r'$\omega_v$', fontsize = 20)
 axs[2].set_ylabel('%particles in trap', fontsize = 20)
 axs[0].set_title('f = 0.1', fontsize = 20); axs[1].set_title('f = 0.4', fontsize = 20); axs[2].set_title('f = 0.7', fontsize = 20)
-#axs[0].legend(fontsize = 15); axs[1].legend(fontsize = 15); axs[2].legend(fontsize = 15)
 fig.savefig("C:/Users/Lenovo/Documents/Høst22/FYS4150/Prosjekt3/particles_in_trap_f0.pdf")
 
-
+#Plot and save fine frequncy search
 fig= plt.figure(figsize = (10,10))
 ax = plt.axes()
 ax.plot(data_trap_wint['wv'], data_trap_wint['num'], 'xkcd:red pink',label='w/o int')
