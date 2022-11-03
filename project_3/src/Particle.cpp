@@ -9,6 +9,10 @@ Particle::Particle(double charge_in, double mass_in, arma::vec position_in, arma
     mass_ = mass_in;
     position = position_in;
     velocity = velocity_in;
+    x0 = position_in(0);
+    v0 = velocity_in(1);
+    z0 = position_in(2);
+    bool out = false;
 }
 
 //method to update position:
@@ -18,4 +22,9 @@ void Particle::new_position(arma::vec new_position){
 //method to update velocity:
 void Particle::new_velocity(arma::vec new_velocity){
     velocity = new_velocity;
+}
+
+void Particle::out_of_trap(bool out)
+{
+    out = true;
 }

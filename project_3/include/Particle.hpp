@@ -10,10 +10,13 @@ class Particle{
     public:
         double charge_;
         double mass_;
-
+        bool out;
     
         arma::vec position;
         arma::vec velocity;
+        double x0;
+        double v0;
+        double z0;
 
         //constructor
         Particle(double charge_in, double mass_in, arma::vec position_in, arma::vec velocity_in);
@@ -22,5 +25,7 @@ class Particle{
         void new_position(arma::vec new_position);
         //method to update velocity:
         void new_velocity(arma::vec new_velocity);
+
+        void out_of_trap(bool out);
 };
 #endif
