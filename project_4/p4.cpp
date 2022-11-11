@@ -12,12 +12,12 @@
 
 int main()
 {
-    int L       = 10;
+    int L       = 20;
     int N       = pow(L,2);
     int J       = 1;
     int k       = 1;
     double T    = 1;
-    std::string var = "exp_energy_T1_NO.csv";
+    std::string var = "exp_energy_T1.csv";
 
     int width   = 4;
     int prec    = 5;
@@ -34,7 +34,7 @@ int main()
     std::vector<double> T_list;
 
     std::mt19937 generator;
-    generator.seed(1e6);
+    generator.seed(17);
     std::uniform_real_distribution<> rng(0,1);
     std::uniform_int_distribution<int> my_01_pdf(1,2);
 
@@ -46,7 +46,7 @@ int main()
         for (int ii = 1; ii < L+1 ; ii ++)
         {
             //Ordered:
-            s_list(i,ii) = 1;
+            s_list(i,ii) = -1;
 
             //Random:
             // s_list(i,ii) = 2*my_01_pdf(generator)-3;
@@ -72,10 +72,10 @@ int main()
             E += -J*s_list(2*i,2*ii-1) * ((s_list(2*i,2*ii-2)   + s_list(2*i+1 , 2*ii-1) + s_list(2*i-1 ,2*ii-1) + s_list(2*i,2*ii)));
         }
     }
-    std::cout << s_list << std::endl;
-    std::cout << E/N << std::endl;
+    // std::cout << s_list << std::endl;
+    // std::cout << E/N << std::endl;
 
-    int MCMC_cycles = 1e3;
+    int MCMC_cycles = 200;
     std::uniform_int_distribution<int> my_02_pdf(1,L);
 
     std::ofstream exp_e;
@@ -91,9 +91,10 @@ int main()
                         -s_list(ix-1, iy)*(-1)*s_list(ix,iy) -s_list(ix+1,iy)*(-1)*s_list(ix, iy)
                         -s_list(ix, iy+1)*(-1)*s_list(ix,iy)-s_list(ix,iy-1)*(-1)*s_list(ix, iy));
 
-            if (rng(generator) <= exp(-beta*dE) or (dE)>0 ) //Trenger vel egentlig Boltzmann factor her?
+            if (rng(generator) <= exp(-beta*dE)) 
             {
                 s_list(ix,iy) *= -1;
+                // std::cout << "Flip" << std::endl;
                 if (ix == 1)
                 {
                     s_list(L+1,iy) *= -1;
@@ -111,6 +112,7 @@ int main()
                     s_list(ix, 0) *= -1;
                 }
             }
+            // std::cout << dE<< std::endl; 
         }
         E = 0;
         M = 0;
@@ -118,14 +120,15 @@ int main()
         {
             for (int ii = 1; ii < L/2. ; ii ++)
             {
-            E += -J*s_list(2*i-1,2*ii) * ((s_list(2*i-2 ,2*ii)  + s_list(2*i, 2*ii)      + s_list(2*i-1,2*ii-1)  + s_list(2*i-1, 2*ii+1)));
-            E += -J*s_list(2*i,2*ii-1) * ((s_list(2*i,2*ii-2)   + s_list(2*i+1 , 2*ii-1) + s_list(2*i-1 ,2*ii-1) + s_list(2*i,2*ii)));
+                E += -J*s_list(2*i-1,2*ii) * ((s_list(2*i-2 ,2*ii)  + s_list(2*i, 2*ii)      + s_list(2*i-1,2*ii-1)  + s_list(2*i-1, 2*ii+1)));
+                E += -J*s_list(2*i,2*ii-1) * ((s_list(2*i,2*ii-2)   + s_list(2*i+1 , 2*ii-1) + s_list(2*i-1 ,2*ii-1) + s_list(2*i,2*ii)));
             }
         }
         double eps = E/(1.0*N);
         exp_e << std::setw(width) << std::setprecision(prec) << std::scientific << cycles
         << std::setw(width) << ','<<std::setprecision(prec) << std::scientific << eps << std::endl;
         
+        std::cout << E << std::endl;
         for (int i = 1; i < L+1; i++)
         {
             for (int ii = 1; ii < L+1 ; ii ++)
@@ -141,8 +144,8 @@ int main()
 
     }
     exp_e.close();
-    std::cout << s_list << std::endl;
-    std::cout << E/N << std::endl;
+    // std::cout << s_list << std::endl;
+    // std::cout << E/N << std::endl;
 
 
     return 0;
