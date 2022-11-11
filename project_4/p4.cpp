@@ -8,15 +8,17 @@
 #include <armadillo>
 #include <random>
 
+//RUN: g++ p4.cpp src/* -larmadillo -I include/ -o p4
+
 int main()
 {
-    int L       = 10;
+    int L       = 20;
     int N       = pow(L,2);
     int J       = 1;
     int k       = 1;
     double T    = 1;
-
-
+    int width   = 4;
+    int prec    = 5;
     //Analytic values
     double beta     = 1/T;
     double prod     = 8*J*beta;
@@ -64,16 +66,20 @@ int main()
     {
         for (int ii = 1; ii < L/2. ; ii ++)
         {
-            E += -J*(s_list(2*i-1,2*ii) * (s_list(2*i-2 ,2*ii)  + s_list(2*i, 2*ii)      + s_list(2*i-1,2*ii-1)  + s_list(2*i-1, 2*ii+1)));
-            E += -J*(s_list(2*i,2*ii-1) * (s_list(2*i,2*ii-2)   + s_list(2*i+1 , 2*ii-1) + s_list(2*i-1 ,2*ii-1) + s_list(2*i,2*ii)));
+            E += -J*s_list(2*i-1,2*ii) * ((s_list(2*i-2 ,2*ii)  + s_list(2*i, 2*ii)      + s_list(2*i-1,2*ii-1)  + s_list(2*i-1, 2*ii+1)));
+            E += -J*s_list(2*i,2*ii-1) * ((s_list(2*i,2*ii-2)   + s_list(2*i+1 , 2*ii-1) + s_list(2*i-1 ,2*ii-1) + s_list(2*i,2*ii)));
         }
     }
-    std::cout << s_list << std::endl;
-    std::cout << E/N << std::endl;
+    // std::cout << s_list << std::endl;
+    // std::cout << E/N << std::endl;
 
-    int MCMC_cycles = 10;
+    int MCMC_cycles = 1e6;
     std::uniform_int_distribution<int> my_02_pdf(1,L);
 
+
+    std::ofstream exp_e;
+    std::string var = "exp_energy_T1.csv";
+    exp_e.open(var);
     for (int cycles = 0; cycles < MCMC_cycles; cycles ++)
     {
         for (int i = 0; i < N; i++)
@@ -106,19 +112,35 @@ int main()
                 }
             }
         }
-    }
-    E = 0;
-    M = 0;
-    for (int i = 1; i <= L/2.; i++)
-    {
-        for (int ii = 1; ii < L/2. ; ii ++)
+        E = 0;
+        M = 0;
+        for (int i = 1; i <= L/2.; i++)
         {
-            E += -J*(s_list(2*i-1,2*ii) * (s_list(2*i-2 ,2*ii)  + s_list(2*i, 2*ii)      + s_list(2*i-1,2*ii-1)  + s_list(2*i-1, 2*ii+1)));
-            E += -J*(s_list(2*i,2*ii-1) * (s_list(2*i,2*ii-2)   + s_list(2*i+1 , 2*ii-1) + s_list(2*i-1 ,2*ii-1) + s_list(2*i,2*ii)));
+            for (int ii = 1; ii < L/2. ; ii ++)
+            {
+            E += -J*s_list(2*i-1,2*ii) * ((s_list(2*i-2 ,2*ii)  + s_list(2*i, 2*ii)      + s_list(2*i-1,2*ii-1)  + s_list(2*i-1, 2*ii+1)));
+            E += -J*s_list(2*i,2*ii-1) * ((s_list(2*i,2*ii-2)   + s_list(2*i+1 , 2*ii-1) + s_list(2*i-1 ,2*ii-1) + s_list(2*i,2*ii)));
+            }
         }
-    }
+        double eps = E/(1.0*N);
+        exp_e << std::setw(width) << std::setprecision(prec) << std::scientific << cycles
+        << std::setw(width) << ','<<std::setprecision(prec) << std::scientific << eps << std::endl;
+        
+        for (int i = 1; i < L+1; i++)
+        {
+            for (int ii = 1; ii < L+1 ; ii ++)
+            {
+            M += s_list(i,ii);
+            }
+        }
+        double m = M/(1.0*N);
+        C_v     = (1.0)/(N*k*pow(T,2))*(pow(E,2) - N* pow(eps, 2));
+        xi      = (1.0)/(N*k*T) * ( pow(M,2) - N*pow(m,2)) ;
 
-    std::cout << s_list << std::endl;
-    std::cout << E/N << std::endl;
+        std::cout << "C_V" << C_v << std::setw(width) << "xi" << xi << std::endl;
+
+    }
+    exp_e.close();
+
     return 0;
 }
