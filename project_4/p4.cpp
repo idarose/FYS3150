@@ -12,11 +12,13 @@
 
 int main()
 {
-    int L       = 20;
+    int L       = 10;
     int N       = pow(L,2);
     int J       = 1;
     int k       = 1;
     double T    = 1;
+    std::string var = "exp_energy_T1_NO.csv";
+
     int width   = 4;
     int prec    = 5;
     //Analytic values
@@ -32,8 +34,8 @@ int main()
     std::vector<double> T_list;
 
     std::mt19937 generator;
-    generator.seed(27);
-    std::uniform_int_distribution<int> rng(0,1);
+    generator.seed(1e6);
+    std::uniform_real_distribution<> rng(0,1);
     std::uniform_int_distribution<int> my_01_pdf(1,2);
 
     int E    = 0;
@@ -44,10 +46,10 @@ int main()
         for (int ii = 1; ii < L+1 ; ii ++)
         {
             //Ordered:
-            // s_list(i,ii) = 1;
+            s_list(i,ii) = 1;
 
             //Random:
-            s_list(i,ii) = 2*my_01_pdf(generator)-3;
+            // s_list(i,ii) = 2*my_01_pdf(generator)-3;
 
             M += s_list(i,ii);
         }
@@ -70,15 +72,13 @@ int main()
             E += -J*s_list(2*i,2*ii-1) * ((s_list(2*i,2*ii-2)   + s_list(2*i+1 , 2*ii-1) + s_list(2*i-1 ,2*ii-1) + s_list(2*i,2*ii)));
         }
     }
-    // std::cout << s_list << std::endl;
-    // std::cout << E/N << std::endl;
+    std::cout << s_list << std::endl;
+    std::cout << E/N << std::endl;
 
-    int MCMC_cycles = 1e6;
+    int MCMC_cycles = 1e3;
     std::uniform_int_distribution<int> my_02_pdf(1,L);
 
-
     std::ofstream exp_e;
-    std::string var = "exp_energy_T1.csv";
     exp_e.open(var);
     for (int cycles = 0; cycles < MCMC_cycles; cycles ++)
     {
@@ -88,10 +88,10 @@ int main()
             int iy = my_02_pdf(generator);
             int dE = -J*((s_list(ix-1, iy)*s_list(ix,iy) + s_list(ix+1, iy)*s_list(ix,iy) +
                         s_list(ix, iy-1)*s_list(ix,iy) + s_list(ix,iy+1)*s_list(ix,iy))
-                        -s_list(ix-1, iy)*(-1)*s_list(ix,iy) -s_list(ix+1,iy)*(-1)*s_list(ix, iy-1)
-                        -s_list(ix, iy+1)*(-1)*s_list(ix,iy));
+                        -s_list(ix-1, iy)*(-1)*s_list(ix,iy) -s_list(ix+1,iy)*(-1)*s_list(ix, iy)
+                        -s_list(ix, iy+1)*(-1)*s_list(ix,iy)-s_list(ix,iy-1)*(-1)*s_list(ix, iy));
 
-            if (my_02_pdf(generator) >= exp(-beta*dE) ) //Trenger vel egentlig Boltzmann factor her?
+            if (rng(generator) <= exp(-beta*dE) or (dE)>0 ) //Trenger vel egentlig Boltzmann factor her?
             {
                 s_list(ix,iy) *= -1;
                 if (ix == 1)
@@ -134,13 +134,16 @@ int main()
             }
         }
         double m = M/(1.0*N);
-        C_v     = (1.0)/(N*k*pow(T,2))*(pow(E,2) - N* pow(eps, 2));
-        xi      = (1.0)/(N*k*T) * ( pow(M,2) - N*pow(m,2)) ;
+        C_v     = (1.0)/(N*k*pow(T,2))*(pow(E,2) - pow(N,2)* pow(eps, 2));
+        xi      = (1.0)/(N*k*T) * ( pow(M,2) - pow(N,2)*pow(m,2)) ;
 
-        std::cout << "C_V" << C_v << std::setw(width) << "xi" << xi << std::endl;
+        // std::cout << "C_V" << C_v << std::setw(width) << "xi" << xi << std::endl;
 
     }
     exp_e.close();
+    std::cout << s_list << std::endl;
+    std::cout << E/N << std::endl;
+
 
     return 0;
 }
