@@ -16,8 +16,8 @@ int main()
     int N       = pow(L,2);
     int J       = 1;
     int k       = 1;
-    double T    = 2.4;
-    std::string var = "exp_energy_T2.csv";
+    double T    = 1;
+    std::string var = "exp_energy_T1.csv";
 
     int width   = 10;
     int prec    = 5;
@@ -75,9 +75,11 @@ int main()
 
     int MCMC_cycles = 1e4;
     std::uniform_int_distribution<int> my_02_pdf(1,L);
+    
+    arma::mat cyc(1, MCMC_cycles);
+    arma::mat E_cyc(1, MCMC_cycles);
+    arma::mat M_cyc(1, MCMC_cycles);
 
-    std::ofstream exp_e;
-    exp_e.open(var);
 
     #pragma omp parallel for
     for (int cycles = 0; cycles < MCMC_cycles; cycles ++)
@@ -86,10 +88,8 @@ int main()
         {
             int ix = my_02_pdf(generator);
             int iy = my_02_pdf(generator);
-            int dE = J*s_list(ix,iy)*((s_list(ix-1, iy) + s_list(ix+1, iy) + s_list(ix, iy-1) + s_list(ix, iy+1))
-                    -J*s_list(ix,iy)* (s_list(ix-1, iy) + s_list(ix+1, iy) + s_list(ix, iy-1) + s_list(ix, iy+1)));
-            // std::cout << dE << std::endl; 
-
+            int dE = 2*J*s_list(ix,iy)*(s_list(ix-1, iy) + s_list(ix+1, iy) + s_list(ix, iy-1) + s_list(ix, iy+1));
+            // std::cout << dE << std::endl;
             if (rng(generator) <= exp(-beta*dE)) 
             {
                 s_list(ix,iy) *= -1;
@@ -123,10 +123,7 @@ int main()
             }
         }
         double eps = E/(1.0*N);
-        exp_e << std::setw(width) << std::setprecision(prec) << std::scientific << cycles
-        << std::setw(width) << ','<<std::setprecision(prec) << std::scientific << eps << std::endl;
-        
-        std::cout << (E) << std::setw(width) << eps <<std::endl;
+        // std::cout << E << std::endl;
         for (int i = 1; i < L+1; i++)
         {
             for (int ii = 1; ii < L+1 ; ii ++)
@@ -139,8 +136,20 @@ int main()
         C_v     = (1.0)/(k*pow(T,2))*(pow(eps,2) - N* pow(eps, 2));
         xi      = (1.0)/(k*T)       *(pow(m,2)   - N* pow(m,2)) ;
 
-        // std::cout << "C_V" << C_v << std::setw(width) << "xi" << xi << std::endl;
+        cyc(cycles) = cycles;
+        E_cyc(cycles) = E;
+        M_cyc(cycles) = M;
     }
+    std::ofstream exp_e;
+    exp_e.open(var);
+    for (int i = 0; i < MCMC_cycles; i++)
+    {
+        double eps = E_cyc(i)/(1.0*N);
+        exp_e <<std::setw(width) << std::setprecision(prec) << std::scientific << M_cyc(i)
+        << std::setw(width) << std::setw(width) << std::setprecision(prec) << std::scientific << E_cyc(i)
+        << std::setw(width) << ','<<std::setprecision(prec) << std::scientific << cyc(i) << std::endl;       
+    }
+    // std::cout << E_cyc;
     exp_e.close();
 
     return 0;
