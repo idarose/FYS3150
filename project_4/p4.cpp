@@ -13,14 +13,16 @@
 int main()
 {
     int L       = 20;
+    arma::vec L_list = {40,60,80,100};//Mulig høyere
+    arma::vec T_list = arma::linspace(2.1,2.4,20);
     int N       = pow(L,2);
     int J       = 1;
     int k       = 1;
     double T    = 1;
     double beta = 1/T;
-    std::string var = "exp_eps_T1.csv";
+    std::string var = "exp_energy_T1.csv";
 
-    int width   = 10;
+    int width   = 25;
     int prec    = 8;
     
     //Analytic values
@@ -32,11 +34,11 @@ int main()
     double xi       = 1/(beta* pow(Z,2))*64*(3 + exp(-8*J*beta) + 3*exp(8*J*beta));
 
     arma::mat s_list(L+2,L+2);
-    std::vector<double> T_list;
+    // std::vector<double> T_list;
 
     std::mt19937 generator;
     generator.seed(17);
-    std::uniform_real_distribution<> rng(0,1);
+    std::uniform_real_distribution<double> rng(0.0,1.0);
     std::uniform_int_distribution<int> my_01_pdf(1,2);
 
     int E    = 0;
@@ -84,29 +86,29 @@ int main()
     int tot_E = E;
     int tot_M = M;
     int fps = 0;
+    double a;
+    double E_ = tot_E;
+    double M_ = tot_M;
 
-    // #pragma omp parallel for
-    for (int cycles = 0; cycles < MCMC_cycles; cycles ++)
+    arma::vec Cv_list(arma::size(L_list),MCMC_cycles);
+    arma::vec xi_list(arma::size(L_list),MCMC_cycles);
+    arma::vec eps_list(arma::size(L_list),MCMC_cycles);
+    arma::vec m_list(arma::size(L_list),MCMC_cycles);
+    #pragma omp parallel for
+    for (int lattice= 0; lattice< arma::size(L_list); lattice++)
+    {
+    for (int cycles = 1; cycles < MCMC_cycles; cycles ++)
     {   
-//        std::cout << cycles << ":  " << fps << std::endl;     
-        fps = 0;
         for (int i = 0; i < N; i++)
         {
             int ix = my_02_pdf(generator);
             int iy = my_02_pdf(generator);
             int dE = 2*J*s_list(ix,iy)*(s_list(ix-1, iy) + s_list(ix+1, iy) + s_list(ix, iy-1) + s_list(ix, iy+1));
-            // std::cout << dE << std::endl;
-
-            if (rng(generator) <= exp(-beta*dE)) 
+            a = rng(generator);
+            if (a <= exp(-beta*dE)) 
             {
-                fps++;
                 s_list(ix,iy) *= -1;
-                tot_E += dE;
-                tot_M += 2*s_list(ix,iy);
-                // std::cout << tot_E << std::endl;
-                // std::cout << cycles << std::endl;
-                // std::cout << "Flip" << std::endl;
-                //Ikke bra: Den flipper stort sett på hver MCMC cycle opp til og med 1e5.
+
                 if (ix == 1)
                 {
                     s_list(L+1,iy) *= -1;
@@ -125,49 +127,93 @@ int main()
                 }
             }        
         }
-        // E = 0;
-        // M = 0;
-        // for (int i = 1; i <= L/2.; i++)
-        // {
-        //     for (int ii = 1; ii <= L/2. ; ii ++)
-        //     {
-        //         E += -J*s_list(2*i-1,2*ii) * ((s_list(2*i-2 ,2*ii)   + s_list(2*i-1,2*ii-1)  +  s_list(2*i  ,2*ii)   +  s_list(2*i-1,2*ii+1)));
-        //         E += -J*s_list(2*i,2*ii-1) * ((s_list(2*i-1 ,2*ii-1) + s_list(2*i  ,2*ii-2)  +  s_list(2*i+1,2*ii-1) +  s_list(2*i  ,2*ii)));
-        //     }
-        // }
-        // 
-        // // std::cout << E << std::setw(width) << cycles << std::endl;
-        // for (int i = 1; i < L+1; i++)
-        // {
-        //     for (int ii = 1; ii < L+1 ; ii ++)
-        //     {
-        //         M += s_list(i,ii);
-        //     }
-        // }
-        // double eps = E/(1.0*N);
-        // double m = M/(1.0*N);
-        // C_v     = (1.0)/(k*pow(T,2))*(pow(eps,2) - N* pow(eps, 2));
-        // xi      = (1.0)/(k*T)       *(pow(m  ,2) - N* pow(m  , 2)) ;
 
-        cyc(cycles) = cycles;
-        E_cyc(cycles) = tot_E;
-        M_cyc(cycles) = tot_M;
+        E = 0;
+        M = 0;
+        for (int i = 1; i <= L/2.; i++)
+        {
+            for (int ii = 1; ii <= L/2. ; ii ++)
+            {
+                E += -J*s_list(2*i-1,2*ii) * ((s_list(2*i-2 ,2*ii)   + s_list(2*i-1,2*ii-1)  +  s_list(2*i  ,2*ii)   +  s_list(2*i-1,2*ii+1)));
+                E += -J*s_list(2*i,2*ii-1) * ((s_list(2*i-1 ,2*ii-1) + s_list(2*i  ,2*ii-2)  +  s_list(2*i+1,2*ii-1) +  s_list(2*i  ,2*ii)));
+            }
+        }
+        for (int i = 1; i < L+1; i++)
+        {
+            for (int ii = 1; ii < L+1 ; ii ++)
+            {
+                M += s_list(i,ii);
+            }
+        }
+
+
+        M_ += M;
+        tot_M = M_/(1.0*cycles);
+        E_ += E;
+        tot_E = E_/(1.0*cycles);
+
+        double eps = tot_E/(1.0*N);
+        double m = tot_M/(1.0*N);
+        C_v     = (1.0)/(k*pow(T,2))*(pow(eps,2) - N* pow(eps, 2));
+        xi      = (1.0)/(k*T)       *(pow(m  ,2) - N* pow(m  , 2)) ;
+        
+        Cv_list(lattice,cycles) = C_v;
+        xi_list(lattice,cycles) = xi;
+        eps_list(lattice,cycles) = eps;
+        m_list(lattice,cycles) = m;
+
+        // cyc(cycles) = cycles;
+        // E_cyc(cycles) = tot_E;
+        // M_cyc(cycles) = tot_M;
     }
-    std::ofstream exp_e;
-    exp_e.open(var);
-    double m;
-    std::cout << tot_E << std::setw(width) << tot_M << std::endl;
+    }
+
+//     std::ofstream exp_e;
+//     exp_e.open(var);
+//     double m;
+//     for (int i = 0; i < MCMC_cycles; i++)
+//     {
+//         double eps  = E_cyc(i)/(1.0*N);
+//         m           = std::abs(M_cyc(i))/(1.0*N); 
+
+//         exp_e <<std::setw(width) << std::setprecision(prec) << std::scientific << eps
+//         << std::setw(width) <<','<< std::setw(width) << std::setprecision(prec) << std::scientific << m
+//         << std::setw(width) << ','<<std::setprecision(prec) << std::scientific << cyc(i) << std::endl;       
+//     }
+//     // std::cout << E_cyc;
+//     exp_e.close();
+    std::ofstream L_file1;
+    L_file1.open("L_expect_eps");
+    std::ofstream L_file2;
+    L_file2.open("L_expect_m");
+    std::ofstream L_file3;
+    L_file3.open("L_expect_cv");
+    std::ofstream L_file4;
+    L_file4.open("L_expect_xi");
+
     for (int i = 0; i < MCMC_cycles; i++)
     {
-        double eps = E_cyc(i)/(1.0*N);
-        m   = std::abs(M_cyc(i))/(1.0*N); 
-
-        exp_e <<std::setw(width) << std::setprecision(prec) << std::scientific << eps
-        // << std::setw(width) << std::setw(width) << std::setprecision(prec) << std::scientific << M_cyc(i)
-        << std::setw(width) << ','<<std::setprecision(prec) << std::scientific << cyc(i) << std::endl;       
+        L_file1 <<std::setw(width) << std::setprecision(prec) << std::scientific << eps_list(0,i)
+        << std::setw(width) <<',' << std::setprecision(prec) << std::scientific << eps_list(1,i)
+        << std::setw(width) <<',' << std::setprecision(prec) << std::scientific << eps_list(2,i)
+        << std::setw(width) <<',' << std::setprecision(prec) << std::scientific << eps_list(3,i) << std::endl;
+        L_file2 <<std::setw(width) << std::setprecision(prec) << std::scientific << m_list(0,i)
+        << std::setw(width) <<',' << std::setprecision(prec) << std::scientific << m_list(1,i)
+        << std::setw(width) <<',' << std::setprecision(prec) << std::scientific << m_list(2,i)
+        << std::setw(width) <<',' << std::setprecision(prec) << std::scientific << m_list(3,i) << std::endl;
+        L_file3 <<std::setw(width) << std::setprecision(prec) << std::scientific << Cv_list(0,i)
+        << std::setw(width) <<',' << std::setprecision(prec) << std::scientific << Cv_list(1,i)
+        << std::setw(width) <<',' << std::setprecision(prec) << std::scientific << Cv_list(2,i)
+        << std::setw(width) <<',' << std::setprecision(prec) << std::scientific << Cv_list(3,i) << std::endl;
+        L_file4 <<std::setw(width) << std::setprecision(prec) << std::scientific << xi_list(0,i)
+        << std::setw(width) <<',' << std::setprecision(prec) << std::scientific << xi_list(1,i)
+        << std::setw(width) <<',' << std::setprecision(prec) << std::scientific << xi_list(2,i)
+        << std::setw(width) <<',' << std::setprecision(prec) << std::scientific << xi_list(3,i) << std::endl;
     }
-    // std::cout << E_cyc;
-    exp_e.close();
-
+    L_file1.close();
+    L_file2.close();
+    L_file3.close();
+    L_file4.close();
+    
     return 0;
 }
