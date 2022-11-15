@@ -205,7 +205,7 @@ int main()
             }
         double eps = E_cyc(MCMC_cycles-1)/(1.0*N);
         double m = tot_M/(1.0*N);
-
+        std::cout << eps << std::endl;
         C_v     = (1.0)/(k*pow(T_list(t),2))*(pow(eps, 2) - N* pow(eps,2) );
         xi      = (1.0)/(k*T_list(t))       *(pow(m  ,2) - N* pow(m  , 2)) ;
         
