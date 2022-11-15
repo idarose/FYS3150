@@ -83,21 +83,27 @@ int main()
 
     int tot_E = E;
     int tot_M = M;
+    int fps = 0;
 
-        // #pragma omp parallel for
+    // #pragma omp parallel for
     for (int cycles = 0; cycles < MCMC_cycles; cycles ++)
-    {        
+    {   
+//        std::cout << cycles << ":  " << fps << std::endl;     
+        fps = 0;
         for (int i = 0; i < N; i++)
         {
             int ix = my_02_pdf(generator);
             int iy = my_02_pdf(generator);
             int dE = 2*J*s_list(ix,iy)*(s_list(ix-1, iy) + s_list(ix+1, iy) + s_list(ix, iy-1) + s_list(ix, iy+1));
             // std::cout << dE << std::endl;
+
             if (rng(generator) <= exp(-beta*dE)) 
             {
+                fps++;
                 s_list(ix,iy) *= -1;
                 tot_E += dE;
                 tot_M += 2*s_list(ix,iy);
+                // std::cout << tot_E << std::endl;
                 // std::cout << cycles << std::endl;
                 // std::cout << "Flip" << std::endl;
                 //Ikke bra: Den flipper stort sett på hver MCMC cycle opp til og med 1e5.
@@ -156,8 +162,8 @@ int main()
         double eps = E_cyc(i)/(1.0*N);
         m   = std::abs(M_cyc(i))/(1.0*N); 
 
-        exp_e <<std::setw(width) << std::setprecision(prec) << std::scientific << E_cyc(i)
-        << std::setw(width) << std::setw(width) << std::setprecision(prec) << std::scientific << M_cyc(i)
+        exp_e <<std::setw(width) << std::setprecision(prec) << std::scientific << eps
+        // << std::setw(width) << std::setw(width) << std::setprecision(prec) << std::scientific << M_cyc(i)
         << std::setw(width) << ','<<std::setprecision(prec) << std::scientific << cyc(i) << std::endl;       
     }
     // std::cout << E_cyc;
