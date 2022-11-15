@@ -17,12 +17,13 @@ int main()
     int J       = 1;
     int k       = 1;
     double T    = 1;
-    std::string var = "exp_energy_T1.csv";
+    double beta = 1/T;
+    std::string var = "exp_eps_T1.csv";
 
     int width   = 10;
-    int prec    = 5;
+    int prec    = 8;
+    
     //Analytic values
-    double beta     = 1/T;
     double prod     = 8*J*beta;
     double Z        = 12 + 4*std::cosh(prod);
     double eps_exp  = 32*J*std::sinh(8*J*beta)/(N*pow(Z,2));
@@ -66,22 +67,24 @@ int main()
 
     for (int i = 1; i <= L/2.; i++)
     {
-        for (int ii = 1; ii < L/2. ; ii ++)
+        for (int ii = 1; ii <= L/2. ; ii ++)
         {
             E += -J*s_list(2*i-1,2*ii) * ((s_list(2*i-2 ,2*ii)  + s_list(2*i, 2*ii)      + s_list(2*i-1,2*ii-1)  + s_list(2*i-1, 2*ii+1)));
             E += -J*s_list(2*i,2*ii-1) * ((s_list(2*i,2*ii-2)   + s_list(2*i+1 , 2*ii-1) + s_list(2*i-1 ,2*ii-1) + s_list(2*i,2*ii)));
         }
     }
 
-    int MCMC_cycles = 1e4;
+    int MCMC_cycles = 1e5;
     std::uniform_int_distribution<int> my_02_pdf(1,L);
     
     arma::mat cyc(1, MCMC_cycles);
     arma::mat E_cyc(1, MCMC_cycles);
     arma::mat M_cyc(1, MCMC_cycles);
 
+    int tot_E = E;
+    int tot_M = M;
 
-    #pragma omp parallel for
+        // #pragma omp parallel for
     for (int cycles = 0; cycles < MCMC_cycles; cycles ++)
     {        
         for (int i = 0; i < N; i++)
@@ -93,7 +96,11 @@ int main()
             if (rng(generator) <= exp(-beta*dE)) 
             {
                 s_list(ix,iy) *= -1;
+                tot_E += dE;
+                tot_M += 2*s_list(ix,iy);
+                // std::cout << cycles << std::endl;
                 // std::cout << "Flip" << std::endl;
+                //Ikke bra: Den flipper stort sett på hver MCMC cycle opp til og med 1e5.
                 if (ix == 1)
                 {
                     s_list(L+1,iy) *= -1;
@@ -112,41 +119,45 @@ int main()
                 }
             }        
         }
-        E = 0;
-        M = 0;
-        for (int i = 1; i <= L/2.; i++)
-        {
-            for (int ii = 1; ii < L/2. ; ii ++)
-            {
-                E += -J*s_list(2*i-1,2*ii) * ((s_list(2*i-2 ,2*ii)   + s_list(2*i-1,2*ii-1)  +  s_list(2*i  ,2*ii)   +  s_list(2*i-1,2*ii+1)));
-                E += -J*s_list(2*i,2*ii-1) * ((s_list(2*i-1 ,2*ii-1) + s_list(2*i  ,2*ii-2)  +  s_list(2*i+1,2*ii-1) +  s_list(2*i  ,2*ii)));
-            }
-        }
-        double eps = E/(1.0*N);
-        // std::cout << E << std::endl;
-        for (int i = 1; i < L+1; i++)
-        {
-            for (int ii = 1; ii < L+1 ; ii ++)
-            {
-                M += s_list(i,ii);
-            }
-        }
-
-        double m = M/(1.0*N);
-        C_v     = (1.0)/(k*pow(T,2))*(pow(eps,2) - N* pow(eps, 2));
-        xi      = (1.0)/(k*T)       *(pow(m,2)   - N* pow(m,2)) ;
+        // E = 0;
+        // M = 0;
+        // for (int i = 1; i <= L/2.; i++)
+        // {
+        //     for (int ii = 1; ii <= L/2. ; ii ++)
+        //     {
+        //         E += -J*s_list(2*i-1,2*ii) * ((s_list(2*i-2 ,2*ii)   + s_list(2*i-1,2*ii-1)  +  s_list(2*i  ,2*ii)   +  s_list(2*i-1,2*ii+1)));
+        //         E += -J*s_list(2*i,2*ii-1) * ((s_list(2*i-1 ,2*ii-1) + s_list(2*i  ,2*ii-2)  +  s_list(2*i+1,2*ii-1) +  s_list(2*i  ,2*ii)));
+        //     }
+        // }
+        // 
+        // // std::cout << E << std::setw(width) << cycles << std::endl;
+        // for (int i = 1; i < L+1; i++)
+        // {
+        //     for (int ii = 1; ii < L+1 ; ii ++)
+        //     {
+        //         M += s_list(i,ii);
+        //     }
+        // }
+        // double eps = E/(1.0*N);
+        // double m = M/(1.0*N);
+        // C_v     = (1.0)/(k*pow(T,2))*(pow(eps,2) - N* pow(eps, 2));
+        // xi      = (1.0)/(k*T)       *(pow(m  ,2) - N* pow(m  , 2)) ;
 
         cyc(cycles) = cycles;
-        E_cyc(cycles) = E;
-        M_cyc(cycles) = M;
+        E_cyc(cycles) = tot_E;
+        M_cyc(cycles) = tot_M;
     }
     std::ofstream exp_e;
     exp_e.open(var);
+    double m;
+    std::cout << tot_E << std::setw(width) << tot_M << std::endl;
     for (int i = 0; i < MCMC_cycles; i++)
     {
         double eps = E_cyc(i)/(1.0*N);
-        exp_e <<std::setw(width) << std::setprecision(prec) << std::scientific << M_cyc(i)
-        << std::setw(width) << std::setw(width) << std::setprecision(prec) << std::scientific << E_cyc(i)
+        m   = std::abs(M_cyc(i))/(1.0*N); 
+
+        exp_e <<std::setw(width) << std::setprecision(prec) << std::scientific << E_cyc(i)
+        << std::setw(width) << std::setw(width) << std::setprecision(prec) << std::scientific << M_cyc(i)
         << std::setw(width) << ','<<std::setprecision(prec) << std::scientific << cyc(i) << std::endl;       
     }
     // std::cout << E_cyc;
