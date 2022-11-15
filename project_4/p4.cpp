@@ -90,12 +90,12 @@ int main()
     double E_ = tot_E;
     double M_ = tot_M;
 
-    arma::vec Cv_list(arma::size(L_list),MCMC_cycles);
-    arma::vec xi_list(arma::size(L_list),MCMC_cycles);
-    arma::vec eps_list(arma::size(L_list),MCMC_cycles);
-    arma::vec m_list(arma::size(L_list),MCMC_cycles);
+    arma::vec Cv_list((L_list.size()),MCMC_cycles);
+    arma::vec xi_list((L_list.size()),MCMC_cycles);
+    arma::vec eps_list((L_list.size()),MCMC_cycles);
+    arma::vec m_list((L_list.size()),MCMC_cycles);
     #pragma omp parallel for
-    for (int lattice= 0; lattice< arma::size(L_list); lattice++)
+    for (int lattice= 0; lattice < (L_list.size()); lattice++)
     {
     for (int cycles = 1; cycles < MCMC_cycles; cycles ++)
     {   
