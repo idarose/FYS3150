@@ -12,7 +12,7 @@
 
 int main()
 {
-    int L       = 20;
+    int L       = 3;
     arma::vec L_list = {40,60,80,100};//Mulig høyere
     arma::vec T_list = arma::linspace(2.1,2.4,20);
     int N       = pow(L,2);
@@ -76,23 +76,27 @@ int main()
         }
     }
 
-    int MCMC_cycles = 1e2;
+    int MCMC_cycles = 1e4;
     std::uniform_int_distribution<int> my_02_pdf(1,L);
+    arma::mat cyc(MCMC_cycles,L_list.size());
+    // arma::mat cyc(2,4);
     
-    arma::mat cyc(1, MCMC_cycles);
-    arma::mat E_cyc(1, MCMC_cycles);
-    arma::mat M_cyc(1, MCMC_cycles);
-
+    arma::mat E_cyc(MCMC_cycles,L_list.size());
+    arma::mat M_cyc(MCMC_cycles,L_list.size());
+    // cyc.eye();
+    // arma::mat Slish = arma::var(cyc);
+    // std::cout <<cyc << std::endl;
+    // std::cout <<Slish << std::endl;
     int tot_E = E;
     int tot_M = M;
     double a;
     double E_ = tot_E;
     double M_ = tot_M;
 
-    arma::mat Cv_list((L_list.size()),MCMC_cycles);
-    arma::mat xi_list((L_list.size()),MCMC_cycles);
-    arma::mat eps_list((L_list.size()),MCMC_cycles);
-    arma::mat m_list((L_list.size()),MCMC_cycles);
+    arma::mat Cv_list(L_list.size(), T_list.size());
+    arma::mat xi_list(L_list.size(), T_list.size());
+    arma::mat eps_list(MCMC_cycles, (L_list.size()));
+    arma::mat m_list(MCMC_cycles, (L_list.size()));
 
     #pragma omp parallel for
     for (int lattice= 0; lattice < (L_list.size()); lattice++)
@@ -193,43 +197,44 @@ int main()
                     }
                 }
 
-                M_ += M;
-                tot_M = M_/(1.0*cycles);
-                E_ += E;
-                tot_E = E_/(1.0*cycles);
-                // double E_sq = pow(tot_E,2);
+                //Calculation for an averaged burn out epsilon
+                //IE. Burn in time
+                // E_ += E;
+                // tot_E = E_/(1.0*cycles);
+                // M_ += M;
+                // tot_M = M_/(1.0*cycles);
 
-                cyc(cycles) = cycles;
-                E_cyc(cycles) = tot_E;
-                M_cyc(cycles) = tot_M;
+                //Energy calculation for lattice energyy
+                tot_E = E; 
+                tot_M = M;
+
+                cyc( cycles,lattice) = cycles;
+                E_cyc(cycles,lattice) = tot_E;
+                M_cyc(cycles,lattice) = tot_M;
             }
-        double eps = E_cyc(MCMC_cycles-1)/(1.0*N);
+        //Matrix of the lattice energies after burn in
+        arma::mat temp_E = E_cyc.submat(1e3, lattice, MCMC_cycles-1, lattice);
+        arma::mat temp_M = M_cyc.submat(1e3, lattice, MCMC_cycles-1, lattice);
+
+        //Variance of E and M after burn in
+        arma::mat var_E = arma::var(temp_E);
+        arma::mat var_M = arma::var(temp_M);
+        // std::cout << var_E << std::endl;
+        double var_eps  = var_E(0)/N;
+        double var_m    = var_M(0)/N;
         double m = tot_M/(1.0*N);
-        std::cout << eps << std::endl;
-        C_v     = (1.0)/(k*pow(T_list(t),2))*(pow(eps, 2) - N* pow(eps,2) );
-        xi      = (1.0)/(k*T_list(t))       *(pow(m  ,2) - N* pow(m  , 2)) ;
+        C_v     = (1.0)/(pow(T_list(t),2))*(var_eps);
+        xi      = (1.0)/(T_list(t))       *(var_m) ;
+        // std::cout << "T=" << T_list(t) << '&' << "L=" << L_list(lattice) << ':'<< C_v << std::endl;
         
-        Cv_list(lattice,T_list.size()) = C_v;
-        xi_list(lattice,T_list.size()) = xi;
-        eps_list(lattice,T_list.size()) = eps;
-        m_list(lattice,T_list.size()) = m;
+        Cv_list(lattice,t) = C_v;
+        xi_list(lattice,t) = xi;
+        // eps_list(lattice,T_list.size()) = eps;
+        // m_list(lattice,T_list.size()) = m;
+        
         }
     }
 
-//     std::ofstream exp_e;
-//     exp_e.open(var);
-//     double m;
-//     for (int i = 0; i < MCMC_cycles; i++)
-//     {
-//         double eps  = E_cyc(i)/(1.0*N);
-//         m           = std::abs(M_cyc(i))/(1.0*N); 
-
-//         exp_e <<std::setw(width) << std::setprecision(prec) << std::scientific << eps
-//         << std::setw(width) <<','<< std::setw(width) << std::setprecision(prec) << std::scientific << m
-//         << std::setw(width) << ','<<std::setprecision(prec) << std::scientific << cyc(i) << std::endl;       
-//     }
-//     // std::cout << E_cyc;
-//     exp_e.close();
     std::ofstream L_file1;
     L_file1.open("L_expect_eps.csv");
     std::ofstream L_file2;
@@ -239,21 +244,26 @@ int main()
     std::ofstream L_file4;
     L_file4.open("L_expect_xi.csv");
 
+    std::cout << Cv_list << std::endl;
     for (int i = 0; i < T_list.size(); i++)
     {
-        L_file1 <<std::setw(width) << std::setprecision(prec) << std::scientific << eps_list(0,i)
+        L_file1 <<std::setw(width) << std::setprecision(prec) << std::scientific << T_list(i)
+        <<','<<std::setw(width) << std::setprecision(prec) << std::scientific << eps_list(0,i)
         << std::setw(width) <<',' << std::setprecision(prec) << std::scientific << eps_list(1,i)
         << std::setw(width) <<',' << std::setprecision(prec) << std::scientific << eps_list(2,i)
         << std::setw(width) <<',' << std::setprecision(prec) << std::scientific << eps_list(3,i) << std::endl;
-        L_file2 <<std::setw(width) << std::setprecision(prec) << std::scientific << m_list(0,i)
+        L_file2<<std::setw(width) << std::setprecision(prec) << std::scientific << T_list(i)
+        <<',' <<std::setw(width) << std::setprecision(prec) << std::scientific << m_list(0,i)
         << std::setw(width) <<',' << std::setprecision(prec) << std::scientific << m_list(1,i)
         << std::setw(width) <<',' << std::setprecision(prec) << std::scientific << m_list(2,i)
         << std::setw(width) <<',' << std::setprecision(prec) << std::scientific << m_list(3,i) << std::endl;
-        L_file3 <<std::setw(width) << std::setprecision(prec) << std::scientific << Cv_list(0,i)
+        L_file3 <<std::setw(width) << std::setprecision(prec) << std::scientific << T_list(i)
+        <<',' <<std::setw(width) << std::setprecision(prec) << std::scientific << Cv_list(0,i)
         << std::setw(width) <<',' << std::setprecision(prec) << std::scientific << Cv_list(1,i)
         << std::setw(width) <<',' << std::setprecision(prec) << std::scientific << Cv_list(2,i)
         << std::setw(width) <<',' << std::setprecision(prec) << std::scientific << Cv_list(3,i) << std::endl;
-        L_file4 <<std::setw(width) << std::setprecision(prec) << std::scientific << xi_list(0,i)
+        L_file4 <<std::setw(width) << std::setprecision(prec) << std::scientific << T_list(i)
+        <<',' <<std::setw(width) << std::setprecision(prec) << std::scientific << xi_list(0,i)
         << std::setw(width) <<',' << std::setprecision(prec) << std::scientific << xi_list(1,i)
         << std::setw(width) <<',' << std::setprecision(prec) << std::scientific << xi_list(2,i)
         << std::setw(width) <<',' << std::setprecision(prec) << std::scientific << xi_list(3,i) << std::endl;
