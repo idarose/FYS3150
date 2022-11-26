@@ -8,36 +8,76 @@
 #include <armadillo>
 #include <random>
 
-//clang++ proj5.cpp -o proj5.exe -Xpreprocessor -fopenmp -lomp -larmadillo -std=c++11
+//clang++ proj5_classes.cpp -o proj5_classes.exe -Xpreprocessor -fopenmp -lomp -larmadillo -std=c++11
 
-
-
-int Index_Converter(int i, int j, int M)
+class Mat_Eq_Solver
 {
-	int list_index = (M-2)*(j-1) + i;
+	public:
+		int M;
+		std::complex<double> delta_t;
+		std::complex<double> r;
+		int Mat_Dim;
+
+		arma::cx_mat A;
+		arma::cx_mat B;
+
+	//Constructor
+	Mat_Eq_Solver(int M_in, double delta_t_in, double r_in);
+
+	int Index_Converter(int i, int j);
+
+	arma::cx_mat Create_Matrix(arma::cx_vec diag_vec);
+
+	void Fill_Eq_Matrix(arma::cx_vec V_Starting);
+};
+
+
+//Constructor
+Mat_Eq_Solver::Mat_Eq_Solver(int M_in, double delta_t_in, double r_in)
+{	
+	M = M_in;
+	Mat_Dim = pow((M-2),2);
+
+	std::complex<double> delta_t_c(delta_t_in, 0.0);
+	delta_t = delta_t_c;
+
+	std::complex<double> r_c(r_in, 0.0);
+	r = r_c;
+};
+
+
+
+
+int Mat_Eq_Solver::Index_Converter(int i, int j)
+{
+	int list_index = (M-2)*j + i;
 	return list_index;
 };
 
 
-arma::cx_mat Create_Matrix(arma::vec diag_vec, double r)
+arma::cx_mat Mat_Eq_Solver::Create_Matrix(arma::cx_vec diag_vec)
 {
-	int Mat_Dim = sqrt(Matrix.size());
-	int M = sqrt(Mat_Dim) + 2;
 
 	arma::cx_mat Matrix(Mat_Dim,Mat_Dim);
 
-	for(int j = 0; j < Mat_Dim; j+=3)
+	for(int j = 0; j < Mat_Dim; j+=(M-2))
 	{
-		Matrix(j,j+1) = - r;
-		Matrix(j+1,j) = - r;
 
-		Matrix(j+1,j+2) = - r;
-		Matrix(j+2,j+1) = - r;
-
-		for(int i = 0; i < 3; i++)
+		for(int i = 0; i < (M-2); i++)
 		{
 			int n = j + i;
 			Matrix(n,n) = diag_vec(n);
+
+			if(n < (Mat_Dim-1))
+			{
+				if(n < (j + (M-3)))
+				{
+					Matrix(n,n+1) = -r;
+					Matrix(n+1,n) = -r;
+				}
+			}
+
+
 		}
 	}
 
@@ -48,14 +88,16 @@ arma::cx_mat Create_Matrix(arma::vec diag_vec, double r)
 };
 
 
-void Fill_Eq_Matrix(arma::cx_mat &V, int M, double t, double delta_t, double r)
+void Mat_Eq_Solver::Fill_Eq_Matrix(arma::cx_vec V_Starting)
 {
-	int Dim = sqrt(V.size());
+	int Dim = sqrt(V_Starting.size());
 
-	arma::cx_vec a(V.size());
-	arma::cx_vec b(V.size());
+	arma::cx_vec a(V_Starting.size());
+	arma::cx_vec b(V_Starting.size());
 
-	std::complex<double> imag = 1i;
+	std::complex<double> imag_i(0.0,1.0);
+
+	std::complex<double> complex_1(1.0,0.0);
 
 	for(int i = 0; i < Dim; i ++)
 	{
@@ -63,30 +105,42 @@ void Fill_Eq_Matrix(arma::cx_mat &V, int M, double t, double delta_t, double r)
 		{
 			int k = Index_Converter(i,j);
 
-			a(k) = 1 + 4*r + imag*delta_t*V(i,j)/2;
-			b(k) = 1 - 4*r - imag*delta_t*V(i,j)/2;
+			a(k) = complex_1 + 4.0*r + imag_i*delta_t*V_Starting(k)/2.0;
+			b(k) = complex_1 - 4.0*r - imag_i*delta_t*V_Starting(k)/2.0;
 		}
 	}
 
-	arma::cx_mat A = Create_Matrix(a,r);
-	arma::cx_mat B = Create_Matrix(b,r);
-}
+	A = Create_Matrix(a);
+	B = Create_Matrix(b);
+};
+
+
+
 
 int main()
-{
-	arma::mat A_Mat = arma::mat(9,9);
-	arma::mat B_Mat = arma::mat(9,9);
+{	
+	int M_ = 5;
+	int dimm = pow((M_-2),2);
 
-	arma::vec a_vec = {1,2,3,4,5,6,7,8,9};
-	arma::vec b_vec = {2,3,4,5,6,7,8,9,10};
+	double r_ = 1.0;
 
-	double r = 1;
+	double delta_t_ = 1.0;
 
-	Create_Matrix(A_Mat, a_vec, r);
-	Create_Matrix(B_Mat, b_vec, r);
+	std::complex<double> vin(2.0,0.0);
 
-	std::cout << A_Mat << std::endl;
-	std::cout << B_Mat << std::endl;
+	arma::cx_vec v_try = arma::cx_vec(dimm).fill(vin);
 
-	return 0;	
+	Mat_Eq_Solver FirstTry = Mat_Eq_Solver(M_, delta_t_, r_);
+	FirstTry.Fill_Eq_Matrix(v_try);
+
+
+	std::cout << FirstTry.A << std::endl;
+
+
 }
+
+
+
+
+
+
