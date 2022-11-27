@@ -8,19 +8,26 @@
 #include <armadillo>
 #include <random>
 
-//clang++ proj5_classes.cpp -o proj5_classes.exe -Xpreprocessor -fopenmp -lomp -larmadillo -std=c++11
+//clang++ proj5_test.cpp -o proj5_test.exe -Xpreprocessor -fopenmp -lomp -larmadillo -std=c++11
 
 class Mat_Eq_Solver
 {
 	public:
-		int M; //Number of points along x-axis
-		std::complex<double> delta_t; //Time step 
-		std::complex<double> r; //
+		double T; //Total time of simulation
+		double delta_t; //Time step 
+		double h; //x and y-axis steps
+
+
+		std::complex<double> r; //Number in Crank-Nicholson equation
+
+		int M; //Number of points on x and y axis
 		int Mat_AB_Dim; //Dimention of Matrices A and B
 		int Mat_VU_Dim; //Dimention of matrices U and V
+		int Vec_U_Dim; //Dimention of vector U
+		int Nt; //Number of timesteps
 
 	//Constructor
-	Mat_Eq_Solver(int M_in, double delta_t_in, double r_in);
+	Mat_Eq_Solver(double T_in, double delta_t_in, double h_in);
 
 	//Method converting indices i and j to index k for a vector
 	int Index_Converter(int i, int j);
@@ -33,27 +40,31 @@ class Mat_Eq_Solver
 
 	arma::cx_vec Gauss_Seidel_Relaxation(arma::cx_mat V, arma::cx_vec &U);
 
-	arma::cx_vec Time_Evolution(int Nt, arma::cx_mat V, arma::cx_vec &U);
+	arma::cx_vec Time_Evolution(arma::cx_mat V, arma::cx_vec &U);
 
-	arma::cx_mat WavePacket(double cx, double cy, double sx, double sy, double px, double py, double h);
+	arma::cx_vec WavePacket(double cx, double cy, double sx, double sy, double px, double py);
 };
 
 
 //Constructor
-Mat_Eq_Solver::Mat_Eq_Solver(int M_in, double delta_t_in, double r_in)
+Mat_Eq_Solver::Mat_Eq_Solver(double T_in, double delta_t_in, double h_in)
 {	
-	M = M_in;
 
-	//Calculating matrix dimentions
-	Mat_Dim = pow((M-2),2); 
+	delta_t = delta_t_in;	
+	T = T_in;
+	h = h_in;
 
-	//Making delta t into a complex number
-	std::complex<double> delta_t_c(delta_t_in, 0.0); 
-	delta_t = delta_t_c;
+	Nt = T/h; //Calculating number of timesteps
 
-	//Making r into a complex number
-	std::complex<double> r_c(r_in, 0.0);
-	r = r_c;
+	M = 1.0/h; //Calculating axis stepsize
+
+	Mat_AB_Dim = pow((M-2),2); //Calculating dimentions of matrices A and B
+	Mat_VU_Dim = (M-2); //Calculating dimentions of matrices U and V
+	Vec_U_Dim = Mat_AB_Dim; //Calculating length of vector U
+
+	std::complex<double> imag_i(0.0,1.0); //Imaginray number i
+
+	r = imag_i*delta_t/(2*pow(h,2));
 };
 
 
@@ -79,9 +90,9 @@ arma::cx_mat Mat_Eq_Solver::Create_Matrix(arma::cx_vec diag_vec, std::string A_o
 	*/
 
 	//Creating matrix
-	arma::cx_mat Matrix(Mat_Dim,Mat_Dim);
+	arma::cx_mat Matrix(Mat_AB_Dim,Mat_AB_Dim);
 
-	for(int j = 0; j < Mat_Dim; j+=(M-2))
+	for(int j = 0; j < Mat_AB_Dim; j+=(M-2))
 	{
 
 		for(int i = 0; i < (M-2); i++)
@@ -91,7 +102,7 @@ arma::cx_mat Mat_Eq_Solver::Create_Matrix(arma::cx_vec diag_vec, std::string A_o
 			Matrix(n,n) = diag_vec(n);
 
 			//Filling elements surrounding main diagonal
-			if(n < (Mat_Dim-1))
+			if(n < (Mat_AB_Dim-1))
 			{
 				if(n < (j + (M-3)))
 				{
@@ -138,25 +149,21 @@ arma::cx_mat Mat_Eq_Solver::Fill_Eq_Matrix(arma::cx_mat V, std::string A_or_B)
 	V: vector containing position points
 	*/
 
-	//Dimention of V
-	int Dim = sqrt(V.size());
+	std::complex<double> imag_i(0.0,1.0); //Imaginray number i
 
-	//Creating matrix
-	arma::cx_mat Eq_Matrix = arma::cx_mat(Mat_Dim, Mat_Dim);
+	//Creating matrix A or B
+	arma::cx_mat Eq_Matrix = arma::cx_mat(Mat_AB_Dim, Mat_AB_Dim);
 
-	//Creating diagonal vectors form matrices
-	arma::cx_vec diagonal_vector(V.size());
-
-	//Defining imaginary number i
-	std::complex<double> imag_i(0.0,1.0);
+	//Creating diagonal vectors to form matrices
+	arma::cx_vec diagonal_vector(Mat_AB_Dim);
 
 	//Defining 1.0 as a complex number
 	std::complex<double> complex_1(1.0,0.0);
 
 	//Filling a and b vectors
-	for(int i = 0; i < Dim; i ++)
+	for(int i = 0; i < Mat_VU_Dim; i ++)
 	{
-		for(int j = 0; j < Dim; j++)
+		for(int j = 0; j < Mat_VU_Dim; j++)
 		{
 			int k = Index_Converter(i,j);
 
@@ -192,18 +199,16 @@ arma::cx_vec Mat_Eq_Solver::Gauss_Seidel_Relaxation(arma::cx_mat V, arma::cx_vec
 	arma::cx_mat B = Fill_Eq_Matrix(V, "B");
 	arma::cx_mat A = Fill_Eq_Matrix(V, "A");
 
-	int Dim = U.size();
-
 	double omega = 1.0;
 
-	arma::cx_vec b = arma::cx_vec(Dim);
+	arma::cx_vec b = arma::cx_vec(Vec_U_Dim);
 
 
-	for(int i=0; i<Dim; i++)
+	for(int i=0; i<Vec_U_Dim; i++)
 	{
 		std::complex<double> b_element(0.0,0.0);
 
-		for(int j=0; j<Dim; j++)
+		for(int j=0; j<Vec_U_Dim; j++)
 		{
 			b_element += B(i,j)*U(j);
 
@@ -212,7 +217,7 @@ arma::cx_vec Mat_Eq_Solver::Gauss_Seidel_Relaxation(arma::cx_mat V, arma::cx_vec
 		b(i) = b_element;
 	}
 
-	for(int i=0; i < Dim; i++)
+	for(int i=0; i < Vec_U_Dim; i++)
 	{
 		U(i) = U(i) + (1.0*omega)/(A(i,i))*( b(i) -A(i,i)* U(i));
 
@@ -221,7 +226,7 @@ arma::cx_vec Mat_Eq_Solver::Gauss_Seidel_Relaxation(arma::cx_mat V, arma::cx_vec
 			U(i) -= (1.0*omega)/A(i,i) * A(i,j)*U(j);
 		}
 
-		for (int j = i+1; j < Dim; j++)
+		for (int j = i+1; j < Vec_U_Dim; j++)
 		{
 			U(i) -= (1.0*omega)/A(i,i) * A(i,j)*U(j);
 		}
@@ -233,27 +238,25 @@ arma::cx_vec Mat_Eq_Solver::Gauss_Seidel_Relaxation(arma::cx_mat V, arma::cx_vec
 
 }
 
-arma::cx_vec Mat_Eq_Solver::Time_Evolution(int Nt, arma::cx_mat V, arma::cx_vec &U)
+arma::cx_vec Mat_Eq_Solver::Time_Evolution(arma::cx_mat V, arma::cx_vec &U)
 {
-	arma::cx_vec b_calculated;
+	arma::cx_vec b_vector;
 
 	arma::cx_vec residual(Nt);
 
 	arma::cx_mat A = Fill_Eq_Matrix(V, "A");
 
-	int Dim = U.size();
-
 	for(int i=0; i<Nt; i++)
 	{
-		b_calculated = Gauss_Seidel_Relaxation(V, U);
+		b_vector = Gauss_Seidel_Relaxation(V, U);
 
-		arma::cx_vec A_times_U(b_calculated.size());
+		arma::cx_vec A_times_U(Vec_U_Dim);
 
-		for(int i=0; i<Dim; i++)
+		for(int i=0; i<Vec_U_Dim; i++)
 		{
 			std::complex<double> A_times_U_element(0.0,0.0);
 
-			for(int j=0; j<Dim; j++)
+			for(int j=0; j<Vec_U_Dim; j++)
 			{
 				A_times_U_element += A(i,j)*U(j);
 
@@ -262,28 +265,29 @@ arma::cx_vec Mat_Eq_Solver::Time_Evolution(int Nt, arma::cx_mat V, arma::cx_vec 
 			A_times_U(i) = A_times_U_element;
 		}
 
-		arma::cx_vec r = A_times_U - b_calculated;
+		arma::cx_vec r = A_times_U - b_vector;
 
-		residual(i) = r.max()/b_calculated.max();
+		residual(i) = r.max()/b_vector.max();
 	}
 
 	return residual;
 }
 
 
-arma::cx_mat Mat_Eq_Solver::WavePacket(double xc, double yc, double sx, double sy, double px, double py, double h)
+arma::cx_vec Mat_Eq_Solver::WavePacket(double xc, double yc, double sx, double sy, double px, double py)
 {	
 
-	std::complex<double> imag_i(0.0,1.0);
+	std::complex<double> imag_i(0.0,1.0); //Imaginray number i
 
-	int M_p = 1.0/h + 1.0;
-	arma::cx_mat U = arma::cx_mat(M_p-2,M_p-2).fill(0);
+	arma::cx_vec U = arma::cx_vec(Vec_U_Dim);
+
 
 	double norm;
+	int k;
 
-	for(int i=0; i < (M_p-2); i++)
+	for(int i=0; i < Mat_VU_Dim; i++)
 	{
-		for(int j=0; j < (M_p-2); j++)
+		for(int j=0; j < Mat_VU_Dim; j++)
 		{
 			double x = i*h;
 			double y = j*h;
@@ -292,44 +296,33 @@ arma::cx_mat Mat_Eq_Solver::WavePacket(double xc, double yc, double sx, double s
 			std::complex<double> var_px = px*(x-xc)*imag_i;
 			std::complex<double> var_py = py*(y-yc)*imag_i;
 			
-			U(i,j) = exp(var_x + var_y + var_px + var_py );
+			k = Index_Converter(i,j);
 
-			norm += real(U(i,j)*U(i,j)*exp( - imag_i));
+			U(k) = exp(var_x + var_y + var_px + var_py );
+
+			norm += real(U(k)*U(k)*exp( - imag_i));
 		}
 	}
 
 	U = U/norm; 
 
-	return arma::vectorise(U,1);
+	return U;
 
 }
 
-arma::cx_mat Mat_Eq_Solver::Making_Potential(double x, double dx, double len_y, double d)
-{
-	arma::cx_mat V(Mat_Dim,Mat_Dim);
-
-
-
-}
 
 
 
 int main()
 {	
-	int M_ = 5;
-	int dimm = pow((M_-2),2);
 
-	double r_ = 1.0;
+	double T_ = 0.008;
+	double delta_t_ = 0.000025;
+	double h_ = 0.005;
+	int N = T_/h_;
 
-	double delta_t_ = 1.0;
+	Mat_Eq_Solver FirstTry = Mat_Eq_Solver(T_, delta_t_, h_);
 
-	std::complex<double> vin(2.0,0.0);
-
-	arma::cx_vec v_try = arma::cx_vec(dimm).fill(vin);
-
-	Mat_Eq_Solver FirstTry = Mat_Eq_Solver(M_, delta_t_, r_);
-
-	double h = 0.005;
 	double xc = 0.25;
 	double sx = 0.05;
 	double px = 200;
@@ -337,29 +330,30 @@ int main()
 	double sy = 0.05;
 	double py = 0.0;
 
-	arma::cx_mat u_out = FirstTry.WavePacket(xc,yc,sx,sy,px,py,h);
+	arma::cx_vec u_start = FirstTry.WavePacket(xc,yc,sx,sy,px,py);
 
-	std::cout << u_out << std::endl;
+	std::cout << real(u_start(2)) << std::endl;
 
-	// arma::cx_mat xy = FirstTry.WavePacket();
+	int dimention = sqrt(u_start.size());
 
-	// std::cout << xy << std::endl;
-	// arma::cx_mat result = FirstTry.Fill_Eq_Matrix(v_try, "B");
+	std::complex<double> vii(1.0,0.0);
 
-	// std::cout << v_try << std::endl;
+	arma::cx_mat V_start = arma::cx_mat(dimention,dimention).fill(vii);
 
-	// arma::cx_vec b_vec = FirstTry.Gauss_Seidel_DRelaxation(v_try);
+	arma::cx_vec res = FirstTry.Time_Evolution(V_start, u_start);
 
-	// std::cout << v_try << std::endl;
+	std::cout << real(u_start(2)) << std::endl;
 
-	// int Nt = 1000;
-	// arma::cx_vec resi = FirstTry.Time_Evolution(Nt, v_try);
-
-	// std::cout << v_try << std::endl;
-
-	// std::cout << real(resi(Nt-1)) << std::endl;
+	std::cout << res(N) << std::endl;
 
 }
+
+
+
+
+
+
+
 
 
 
