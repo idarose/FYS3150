@@ -44,7 +44,7 @@ class Mat_Eq_Solver
 
 	arma::cx_vec WavePacket(double cx, double cy, double sx, double sy, double px, double py);
 	
-	arma::cx_mat Making_Potential(int num_slit, double h, bool barrier);
+	arma::cx_mat Making_Potential(int num_slit, double h, double v_);
 
 };
 
@@ -317,17 +317,7 @@ arma::cx_mat Mat_Eq_Solver::Making_Potential(int num_slit, double h, bool barrie
 {
 	int Mat_Dim = 1.0/h + 1;
 	arma::cx_mat V(Mat_Dim,Mat_Dim);
-	V.fill(1);
-	std::complex<double> v0;
-	
-	if (barrier)
-	{
-		v0 = 1e10;
-	}
-	else
-	{
-		v0 = 0;
-	}
+	std::complex<double> v0 = v_;
 
 	if (num_slit==1)
 	{
