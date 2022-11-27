@@ -43,6 +43,9 @@ class Mat_Eq_Solver
 	arma::cx_vec Time_Evolution(arma::cx_mat V, arma::cx_vec &U);
 
 	arma::cx_vec WavePacket(double cx, double cy, double sx, double sy, double px, double py);
+	
+	arma::cx_mat Making_Potential(int num_slit, double h, bool barrier);
+
 };
 
 
@@ -310,6 +313,79 @@ arma::cx_vec Mat_Eq_Solver::WavePacket(double xc, double yc, double sx, double s
 
 }
 
+arma::cx_mat Mat_Eq_Solver::Making_Potential(int num_slit, double h, bool barrier)
+{
+	int Mat_Dim = 1.0/h + 1;
+	arma::cx_mat V(Mat_Dim,Mat_Dim);
+	V.fill(1);
+	std::complex<double> v0;
+	
+	if (barrier)
+	{
+		v0 = 1e10;
+	}
+	else
+	{
+		v0 = 0;
+	}
+
+	if (num_slit==1)
+	{
+		for(int i = 98; i < 103; i++)
+		{
+			for(int j = 0; j<95; j++)
+			{
+				V(j,i) = v0;
+			}
+			for(int j = 106; j<201; j++)
+			{
+				V(j,i) = v0;
+			}
+
+		}
+	}
+	if (num_slit==2)
+	{
+		for(int i = 98; i < 103; i++)
+		{
+			for(int j = 0; j<86; j++)
+			{
+				V(j,i) = v0;
+			}
+			for(int j = 96; j<105; j++)
+			{
+				V(j,i) = v0;
+			}
+			for(int j = 115; j<201; j++)
+			{
+				V(j,i) = v0;
+			}
+		}
+	}
+	if (num_slit==3)
+	{
+		for(int i = 98; i < 103; i++)
+		{
+			for(int j = 0; j<75; j++)
+			{
+				V(j,i) = v0;
+			}
+			for(int j = 85; j<95; j++)
+			{
+				V(j,i) = v0;
+			}
+			for(int j = 106; j<116; j++)
+			{
+				V(j,i) = v0;
+			}
+			for(int j = 126; j<201; j++)
+			{
+				V(j,i) = v0;
+			}
+		}
+	}
+	return V;
+}
 
 
 
