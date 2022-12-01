@@ -26,7 +26,7 @@ int main()
 	double delta_t = 0.000025;
 	double h = 0.005;
     int M = 200;
-	int N = 100; //int(T_/delta_t);
+	int N = 320; //int(T_/delta_t);
     
 	double v_ = 1e10;
     arma::cx_double r = arma::cx_double(0.0,delta_t/(2*pow(h,2)));
@@ -82,7 +82,7 @@ int main()
     std::ofstream pfile;
     std::ofstream qfile;
     int width   = 25;
-    int prec    = 8;
+    int prec    = 15;
 
 
     
@@ -93,19 +93,22 @@ int main()
     arma::mat real_new_U(pow(M-2,2),N+1);
     arma::mat imag_new_U(pow(M-2,2),N+1);
     arma::cx_vec new_U = U;
-    
+    real_new_U.col(0) = real(new_U);
+    imag_new_U.col(0) = imag(new_U);
     for(int t=0; t<N; t++)
     {
         double p=0;
 
         //return vector with subelements
-        arma::cx_vec V(pow(M-2,2));
-        
-        new_U = Gauss_Seidel_Relaxation(A, B, new_U);
         real_new_U.col(t) = real(new_U);
         imag_new_U.col(t) = imag(new_U);
+        new_U = Gauss_Seidel_Relaxation(A, B, new_U);
 
-        p += pow(real(new_U(k)),2)+ pow(imag(new_U(k)),2);
+        for(int k=0; k<pow(M-2,2);k++)
+        {
+            p += pow(abs(new_U(k)),2);
+        }
+        
         prob(t) = p;
         std::cout<<'t'<<'='<<t<<std::endl;
     }
@@ -121,12 +124,13 @@ int main()
     {
         for(int col =0; col<=N; col++)
         {
+
             ofile<<std::setw(width) << std::setprecision(prec) << std::scientific << real_new_U(row,col) << ',';
             pfile<<std::setw(width) << std::setprecision(prec) << std::scientific << imag_new_U(row,col) << ',';
         }
         ofile << std::endl;
         pfile << std::endl;
-        if(row<=N)
+        if(row<N)
         {
             qfile<<std::setw(width) << std::setprecision(prec) << std::scientific << row*delta_t << ','
             <<std::setw(width) << std::setprecision(prec) << std::scientific << prob(row) << std::endl;
@@ -157,7 +161,6 @@ arma::sp_cx_mat Create_Matrix_A(arma::vec v, arma::cx_double r, double delta_t)
     int P = sqrt(M);
 
     arma::sp_cx_mat Matrix(M,M);
-    #pragma omp parallel for
 	for(int j=1; j<= M; j++)
 	{
 		Matrix(j-1,j-1) = 1.0 + 4.0*r + arma::cx_double(0.0,delta_t/2*v(j-1));
@@ -188,7 +191,6 @@ arma::sp_cx_mat Create_Matrix_B(arma::vec v, arma::cx_double r, double delta_t)
     int P = sqrt(M);
 
     arma::sp_cx_mat Matrix(M,M);
-    #pragma omp parallel for
 	for(int j=1; j<= M; j++)
 	{
 		Matrix(j-1,j-1) = 1.0 - 4.0*r - arma::cx_double(0.0,delta_t/2*v(j-1));
@@ -287,8 +289,8 @@ arma::mat Making_Potential(int num_slit, int M, double v_)
 
 arma::cx_vec Gauss_Seidel_Relaxation(arma::sp_cx_mat A, arma::sp_cx_mat B, arma::cx_vec &U)
 {
-    int M = U.size();
-    double omega = 1.1;
+    int M = U.size(); //(M-2)^2
+    double omega = 0.7;
     int k;
     double eps = 1.0;
 
@@ -296,40 +298,43 @@ arma::cx_vec Gauss_Seidel_Relaxation(arma::sp_cx_mat A, arma::sp_cx_mat B, arma:
     arma::cx_vec b = B*U;
     arma::cx_vec new_U;
 
-    for(int run=0; run<1e3;run++)
-    {        
-        for(int k=0; k<M; k++)
-        {
-            arma::cx_double Uk = U(k);
-            arma::cx_double Aii = A(k,k);
-            arma::cx_double w_Aii = (1.0*omega)/Aii;
-            Uk = (1-omega)*Uk + w_Aii* b(k);
+    new_U = arma::spsolve(A,b);
+
+    res = A*new_U - b;
+    eps = abs(res.max())/abs(b.max());
+    std::cout<<'E'<<'='<<eps<<std::endl;
+    // for(int run=0; run<1e3;run++)
+    // {        
+    //     for(int k=0; k<M; k++)
+    //     {
+    //         arma::cx_double Uk = U(k);
+    //         arma::cx_double Aii = A(k,k);
+    //         arma::cx_double w_Aii = (1.0*omega)/Aii;
+    //         Uk = (1-omega)*Uk + w_Aii* b(k);
             
-            #pragma omp parallel for
-            for (int p = 0; p<k; p++)
-            {
-                arma::cx_double Aij = A(k,p);
-                Uk -= w_Aii *  Aij*U(p);
-            }
-            #pragma omp parallel for
-            for (int q = k; q < M; q++)
-            {
-                arma::cx_double Aij = A(k,q);
-                Uk -= w_Aii * Aij*U(q);
-            }
-            U(k) = Uk;
-        }
-        res = A*U - b;
-        std::cout<<run<<std::endl;
+    //         #pragma omp parallel for
+    //         for (int p = 0; p<k; p++)
+    //         {
+    //             arma::cx_double Aij = A(k,p);
+    //             Uk -= w_Aii *  Aij*U(p);
+    //         }
+    //         #pragma omp parallel for
+    //         for (int q = k; q < M; q++)
+    //         {
+    //             arma::cx_double Aij = A(k,q);
+    //             Uk -= w_Aii * Aij*U(q);
+    //         }
+    //         U(k) = Uk;
+    //     }
+    //     std::cout<<run<<std::endl;
         
-        eps = abs(res.max())/abs(b.max());
-        std::cout<<'E'<<'='<<eps<<std::endl;
-        if(eps<1e-1)
-        {
-            break;
-        }
-    }
-    new_U = U;
+    //     if(eps<1e-1)
+    //     {
+    //         break;
+    //     }
+    // }
+
+//    new_U = U;
 
 
 	return new_U;
