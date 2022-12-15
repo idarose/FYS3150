@@ -39,7 +39,6 @@ int main()
 	double py = 0.0;
 
     arma::mat Pot = Making_Potential(2, M, v_);
-    //diagonalize vector:
     
     arma::vec v_k(pow(M-2,2));
 	//define potential in the well
