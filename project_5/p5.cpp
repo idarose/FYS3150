@@ -11,38 +11,38 @@
 
 //clang++ proj5_test.cpp -o proj5_test.exe -Xpreprocessor -fopenmp -lomp -larmadillo -std=c++11
 
+//Declare what functions we will use
 int Index_Converter(int i, int j, int M);
 double residual(arma::cx_vec &newU, arma::cx_vec &oldU);
-//arma::cx_vec v_A(arma::cx_mat V, arma::cx_double r, double h);
-//arma::cx_vec v_B(arma::cx_mat V, arma::cx_double r, double h);
 arma::mat Making_Potential(int num_slit, int M, double v_);
 arma::sp_cx_mat Create_Matrix_A(arma::vec v, arma::cx_double r, double delta_t);
 arma::sp_cx_mat Create_Matrix_B(arma::vec v, arma::cx_double r, double delta_t);
 arma::cx_vec Gauss_Seidel_Relaxation(arma::sp_cx_mat A, arma::sp_cx_mat B, arma::cx_vec &U);
 int main()
 {	
-
+	//Initial values
 	double T_ = 0.008;
-	double delta_t = 0.000025;
+	double delta_t = 2.5e-5;
 	double h = 0.005;
     int M = 200;
-	int N = 320; //int(T_/delta_t);
+	int N = 80; //int(T_/delta_t);
     
 	double v_ = 1e10;
     arma::cx_double r = arma::cx_double(0.0,delta_t/(2*pow(h,2)));
 
-	
+	//Values for wave-packet
 	double xc = 0.25;
 	double sx = 0.05;
 	double px = 200;
 	double yc = 0.5;
-	double sy = 0.05;
+	double sy = 0.20;
 	double py = 0.0;
 
     arma::mat Pot = Making_Potential(2, M, v_);
     //diagonalize vector:
     
     arma::vec v_k(pow(M-2,2));
+	//define potential in the well
     for(int j=0; j<M-2; j++)
     {
         for(int i=0; i<M-2; i++)
@@ -51,6 +51,7 @@ int main()
             v_k(k) = Pot(i,j);
         }
     }
+	//Make matrix A and B
     arma::sp_cx_mat A = Create_Matrix_A(v_k, r, delta_t);
     arma::sp_cx_mat B = Create_Matrix_B(v_k, r, delta_t);
 
@@ -86,40 +87,45 @@ int main()
 
 
     
-
-	U = U/sqrt(norm); //wave-packet done
-    arma::vec prob(N);
-    
+    //Normalize wave-packet to a prob of 1
+    U = U/sqrt(norm); //wave-packet done
+    arma::vec prob(N+1);
+    double p;
+	//Define two different files to write to so pandas (python) can read the files
     arma::mat real_new_U(pow(M-2,2),N+1);
     arma::mat imag_new_U(pow(M-2,2),N+1);
     arma::cx_vec new_U = U;
-    real_new_U.col(0) = real(new_U);
-    imag_new_U.col(0) = imag(new_U);
-    for(int t=0; t<N; t++)
+	prob(0) = 1;
+    for(int t=0; t<=N; t++)
     {
-        double p=0;
-
-        //return vector with subelements
+		p=0;
+		//store vectors in matrices
         real_new_U.col(t) = real(new_U);
         imag_new_U.col(t) = imag(new_U);
+
+		//evolve wave-packet
         new_U = Gauss_Seidel_Relaxation(A, B, new_U);
 
+		//calculate total prob to check stability
         for(int k=0; k<pow(M-2,2);k++)
         {
             p += pow(abs(new_U(k)),2);
         }
-        
-        prob(t) = p;
+		if(t!=N)
+		{
+			prob(t+1) = p;
+		}
+		
+        //monitor progress
         std::cout<<'t'<<'='<<t<<std::endl;
     }
-    real_new_U.col(N) = real(new_U);
-    imag_new_U.col(N) = imag(new_U);
+	
     
     ofile.open("real_new_U.csv");
     pfile.open("imag_new_U.csv");
     qfile.open("prob.csv");
 
-
+    //write out wave-function and probability values to excel sheets
     for(int row=0; row<pow(M-2,2); row++)
     {
         for(int col =0; col<=N; col++)
@@ -130,7 +136,7 @@ int main()
         }
         ofile << std::endl;
         pfile << std::endl;
-        if(row<N)
+        if(row<=N)
         {
             qfile<<std::setw(width) << std::setprecision(prec) << std::scientific << row*delta_t << ','
             <<std::setw(width) << std::setprecision(prec) << std::scientific << prob(row) << std::endl;
@@ -149,7 +155,7 @@ int main()
 }
 
 
-
+//Function to create matrix A
 arma::sp_cx_mat Create_Matrix_A(arma::vec v, arma::cx_double r, double delta_t)
 {
 	/*
@@ -163,6 +169,7 @@ arma::sp_cx_mat Create_Matrix_A(arma::vec v, arma::cx_double r, double delta_t)
     arma::sp_cx_mat Matrix(M,M);
 	for(int j=1; j<= M; j++)
 	{
+		//Fill sup/sub diagonal matrices and make sure the P-th j-value only have 2 neighbours
 		Matrix(j-1,j-1) = 1.0 + 4.0*r + arma::cx_double(0.0,delta_t/2*v(j-1));
 		if((j)%P !=0 and j!=M)
 		{
@@ -171,6 +178,7 @@ arma::sp_cx_mat Create_Matrix_A(arma::vec v, arma::cx_double r, double delta_t)
 		}
 
 	}
+	//Fill the appropraite diagonal according to the neighbours in position (i,j)
     for(int i=0; i<M-P;i++)
     {
         Matrix(i+P,i) = -r;
@@ -180,13 +188,10 @@ arma::sp_cx_mat Create_Matrix_A(arma::vec v, arma::cx_double r, double delta_t)
 	return Matrix;
 }
 
+//function to create B-matrix
 arma::sp_cx_mat Create_Matrix_B(arma::vec v, arma::cx_double r, double delta_t)
 {
-	/*
-	Creating matrices B
-	diag_vec: vector containing diagonal entries.
-	*/
-	//Creating matrix
+	//Creating matrix B in the same way as A, except with different fill-values
     int M = v.size();
     int P = sqrt(M);
 
