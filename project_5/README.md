@@ -7,6 +7,6 @@ The main program will initialize the wave packet and simulate its motion through
  - ./p5
 
 
-The visualization tool used is based of the program "animate.py" it is run by in-built terminal in VSCode. It is necessary to have all files  produced by the main program iot. produce sufficient data for the plotting. 
+The visualization tool used is based of the program "animate.py" it is run by in-built terminal in VSCode. It is necessary to have all files  produced by the main program iot. produce sufficient data for the plotting. The animation function is not made to create all plots, so it will need editing to get desired plots/animations.
 
 The .gifs are the motion of the wavepacket given the different conditons on the system.
