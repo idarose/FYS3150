@@ -225,10 +225,18 @@ int Index_Converter(int i, int j, int M)
 
 arma::mat Making_Potential(int num_slit, int M, double v_)
 {
+	/*
+	Fill potential matrix with values in 
+	the grid, corresponding to 
+	the required set up
+	*/
+	//Make potential matrix
 	arma::mat V(M-2,M-2);
-    V.fill(0.0);
+    	V.fill(0.0);
+	//Initialize v0 value
 	double v0 = v_;
-
+	
+	//If one slit fill centre, except one slit
 	if (num_slit==1)
 	{
 		for(int i = 97; i < 103; i++)
@@ -244,6 +252,8 @@ arma::mat Making_Potential(int num_slit, int M, double v_)
 
 		}
 	}
+	
+	//If two slit fill centre, except two slits
 	if (num_slit==2)
 	{
 		for(int i = 97; i < 103; i++)
@@ -262,6 +272,8 @@ arma::mat Making_Potential(int num_slit, int M, double v_)
 			}
 		}
 	}
+	
+	//If two slit fill centre, except two slits
 	if (num_slit==3)
 	{
 		for(int i = 98; i < 103; i++)
@@ -289,54 +301,25 @@ arma::mat Making_Potential(int num_slit, int M, double v_)
 
 arma::cx_vec Gauss_Seidel_Relaxation(arma::sp_cx_mat A, arma::sp_cx_mat B, arma::cx_vec &U)
 {
-    int M = U.size(); //(M-2)^2
-    double omega = 0.7;
-    int k;
-    double eps = 1.0;
-
+    /*
+    Solve matrix equation Au=B
+    and find residue of the solver
+    */
+    //Define variable  and vectors
+    double eps;
     arma::cx_vec res;
     arma::cx_vec b = B*U;
     arma::cx_vec new_U;
 
-    new_U = arma::spsolve(A,b);
-
+    //solve matrix equation using built in solver
+    new_U = arma::spsolve(A,b); 
+	
+    //Calculate residue and epsilon
     res = A*new_U - b;
     eps = abs(res.max())/abs(b.max());
     std::cout<<'E'<<'='<<eps<<std::endl;
-    // for(int run=0; run<1e3;run++)
-    // {        
-    //     for(int k=0; k<M; k++)
-    //     {
-    //         arma::cx_double Uk = U(k);
-    //         arma::cx_double Aii = A(k,k);
-    //         arma::cx_double w_Aii = (1.0*omega)/Aii;
-    //         Uk = (1-omega)*Uk + w_Aii* b(k);
-            
-    //         #pragma omp parallel for
-    //         for (int p = 0; p<k; p++)
-    //         {
-    //             arma::cx_double Aij = A(k,p);
-    //             Uk -= w_Aii *  Aij*U(p);
-    //         }
-    //         #pragma omp parallel for
-    //         for (int q = k; q < M; q++)
-    //         {
-    //             arma::cx_double Aij = A(k,q);
-    //             Uk -= w_Aii * Aij*U(q);
-    //         }
-    //         U(k) = Uk;
-    //     }
-    //     std::cout<<run<<std::endl;
-        
-    //     if(eps<1e-1)
-    //     {
-    //         break;
-    //     }
-    // }
 
-//    new_U = U;
-
-
-	return new_U;
+    //Update U
+    return new_U;
 
 }
